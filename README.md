@@ -7,4 +7,13 @@ Players take on the roles of elite **Councillors** within one of four ideologica
 The game unfolds in a single, continuous phase. Strategic actions like seizing **Control Points** in nations, undertaking missions, and taking over powerful global **Organizations (Orgs)** occur concurrently with ongoing political drama. Players must manage their **Resources** to fund their operations, creating a dynamic and constantly evolving narrative.  
 The game will be managed and facilitated by a custom Discord bot that handles all game functions.
 
-# Docs Bavigation:
+# Docs Navigation:
+Player-Ruleset
+Player-Creation
+Missions
+Nation-Mapping
+Research-Projects
+Orgs
+Factions
+Habs
+Ships
