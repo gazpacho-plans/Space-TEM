@@ -1,16 +1,16 @@
 # Navigation:
 
-Player-Ruleset
+[Player-Ruleset](Docs/Player-Ruleset.md)
 
-Player-Creation
+[Player-Creation](Player-Creation.md)
 
-Missions
+[Missions](Docs/Missions.md)
 
 Nation-Mapping
 
 Research-Projects
 
-Orgs
+[Orgs](Docs/Orgs.md)
 
 Factions
 
