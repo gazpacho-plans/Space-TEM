@@ -8,12 +8,22 @@ The game unfolds in a single, continuous phase. Strategic actions like seizing *
 The game will be managed and facilitated by a custom Discord bot that handles all game functions.
 
 # Docs Navigation:
+
 Player-Ruleset
+
 Player-Creation
+
 Missions
+
 Nation-Mapping
+
 Research-Projects
+
 Orgs
+
 Factions
+
 Habs
+
 Ships
+
