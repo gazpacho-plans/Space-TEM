@@ -1,0 +1,162 @@
+[
+  {
+    "name": "Government",
+    "xp_cost": 20,
+    "description": "A member of a recognized government with official status."
+  },
+  {
+    "name": "Transparent",
+    "xp_cost": 0,
+    "description": "Always means exactly what he or she says."
+  },
+  {
+    "name": "Apocalyptic",
+    "xp_cost": 0,
+    "description": "Believes the end of humanity is nigh and wishes others to do so."
+  },
+  {
+    "name": "Aware",
+    "xp_cost": 0,
+    "description": "Particularly skilled at detecting other councillors."
+  },
+  {
+    "name": "Beloved",
+    "xp_cost": 0,
+    "description": "Popular regardless of their loyalties."
+  },
+  {
+    "name": "Hard Target",
+    "xp_cost": 20,
+    "description": "Will strike back if attacked."
+  },
+  {
+    "name": "Streetwise",
+    "xp_cost": 20,
+    "description": "Skilled at navigating dark corners in his or her home nation."
+  },
+  {
+    "name": "Untouchable",
+    "xp_cost": 150,
+    "description": "In too important a position to be safely deleted."
+  },
+  {
+    "name": "Veteran",
+    "xp_cost": 0,
+    "description": "A former member of his or her home nation's armed forces."
+  },
+  {
+    "name": "Ace Assassin",
+    "xp_cost": 0,
+    "description": "An efficient killer."
+  },
+  {
+    "name": "Vengeful",
+    "xp_cost": 0,
+    "description": "It's payback time."
+  },
+  {
+    "name": "Quick Learner",
+    "xp_cost": 0,
+    "description": "Picks up new skills faster than most."
+  },
+  {
+    "name": "Striver",
+    "xp_cost": 0,
+    "description": "Dedicated to self-improvement."
+  },
+  {
+    "name": "Survivor",
+    "xp_cost": 10,
+    "description": "Very hard to kill during episodes of mass violence."
+  },
+  {
+    "name": "Crew",
+    "xp_cost": 0,
+    "description": "Has a small team of loyal followers who serve as bodyguards and can conduct operations."
+  },
+  {
+    "name": "Counselor",
+    "xp_cost": 20,
+    "description": "Appeals to what we have in common."
+  },
+  {
+    "name": "Unifier",
+    "xp_cost": 40,
+    "description": "Influential in nations with a sense of common purpose."
+  },
+  {
+    "name": "Affluent",
+    "xp_cost": 10,
+    "description": "Makes a good living."
+  },
+  {
+    "name": "Prosperous",
+    "xp_cost": 20,
+    "description": "Well-off and able to contribute meaningful funds to the cause."
+  },
+  {
+    "name": "Wealthy",
+    "xp_cost": 40,
+    "description": "Has access to a hefty bank account."
+  },
+  {
+    "name": "Astronomer",
+    "xp_cost": 0,
+    "description": "An expert in the study of Space Science."
+  },
+  {
+    "name": "Chemist",
+    "xp_cost": 0,
+    "description": "An expert in the study of Materials."
+  },
+  {
+    "name": "Doctor",
+    "xp_cost": 0,
+    "description": "An expert in the study of Life Science."
+  },
+  {
+    "name": "Physicist",
+    "xp_cost": 0,
+    "description": "An expert in the study of Energy."
+  },
+  {
+    "name": "Computer Scientist",
+    "xp_cost": 0,
+    "description": "An expert in a study of Information Science."
+  },
+  {
+    "name": "Military Scientist",
+    "xp_cost": 0,
+    "description": "An expert in the study of Military Science."
+  },
+  {
+    "name": "Social Scientist",
+    "xp_cost": 0,
+    "description": "An expert in the study of Social Science."
+  },
+  {
+    "name": "Connected",
+    "xp_cost": 20,
+    "description": "Able to use back channels to exert a measure of influence."
+  },
+  {
+    "name": "Puppet Master",
+    "xp_cost": 40,
+    "description": "Able to pull strings in many places without notice."
+  },
+  {
+    "name": "Low Profile",
+    "xp_cost": 0,
+    "description": "Skilled at evading detection."
+  },
+  {
+    "name": "Undercover",
+    "xp_cost": 0,
+    "description": "This person's public persona conceals someone who is able to infiltrate enemy space installations without fear of identification."
+  },
+  {
+    "name": "Agitator",
+    "xp_cost": 20,
+    "description": "Excels at gaining the support of those unhappy with their nation."
+  }
+]
