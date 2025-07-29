@@ -2,161 +2,274 @@
   {
     "name": "Government",
     "xp_cost": 20,
-    "description": "A member of a recognized government with official status."
+    "description": "A member of a recognized government with official status.",
+    "effects": {
+      "persuasion": {"value": 2, "condition": "government >= 6"},
+      "monthly_influence_income": 5
+    }
   },
   {
     "name": "Transparent",
     "xp_cost": 0,
-    "description": "Always means exactly what he or she says."
+    "description": "Always means exactly what he or she says.",
+    "effects": {
+      "persuasion": {"value": 1, "missions": ["Public Campaign", "Inspire"]},
+      "espionage_when_detected": -1
+    }
   },
   {
     "name": "Apocalyptic",
     "xp_cost": 0,
-    "description": "Believes the end of humanity is nigh and wishes others to do so."
+    "description": "Believes the end of humanity is nigh and wishes others to do so.",
+    "effects": {
+      "persuasion": {"value": 2, "condition": "unrest >= 6"},
+      "grants": ["Increase Unrest"]
+    }
   },
   {
     "name": "Aware",
     "xp_cost": 0,
-    "description": "Particularly skilled at detecting other councillors."
+    "description": "Particularly skilled at detecting other councillors.",
+    "effects": {
+      "investigation": {"value": 2, "missions": ["Investigate Councillor"]}
+    }
   },
   {
     "name": "Beloved",
     "xp_cost": 0,
-    "description": "Popular regardless of their loyalties."
+    "description": "Popular regardless of their loyalties.",
+    "effects": {
+      "public_opinion_gain": {"value": 0.1, "missions": ["Public Campaign"]}
+    }
   },
   {
     "name": "Hard Target",
     "xp_cost": 20,
-    "description": "Will strike back if attacked."
+    "description": "Will strike back if attacked.",
+    "effects": {
+      "counterattack": {"security_penalty": 2, "triggers": ["Assassinate", "Detain"]}
+    }
   },
   {
     "name": "Streetwise",
     "xp_cost": 20,
-    "description": "Skilled at navigating dark corners in his or her home nation."
+    "description": "Skilled at navigating dark corners in his or her home nation.",
+    "effects": {
+      "espionage": {"value": 2, "condition": "home_nation"},
+      "security": {"value": 2, "condition": "home_nation"}
+    }
   },
   {
     "name": "Untouchable",
     "xp_cost": 150,
-    "description": "In too important a position to be safely deleted."
+    "description": "In too important a position to be safely deleted.",
+    "effects": {
+      "immune": ["Assassinate", "Detain"],
+      "espionage_when_detected": -2
+    }
   },
   {
     "name": "Veteran",
     "xp_cost": 0,
-    "description": "A former member of his or her home nation's armed forces."
+    "description": "A former member of his or her home nation's armed forces.",
+    "effects": {
+      "command": {"value": 1, "condition": "home_nation"},
+      "security": {"value": 1, "condition": "home_nation"}
+    }
   },
   {
     "name": "Ace Assassin",
     "xp_cost": 0,
-    "description": "An efficient killer."
+    "description": "An efficient killer.",
+    "effects": {
+      "espionage": {"value": 3, "missions": ["Assassinate"]}
+    }
   },
   {
     "name": "Vengeful",
     "xp_cost": 0,
-    "description": "It's payback time."
+    "description": "It's payback time.",
+    "effects": {
+      "all_attributes": {"value": 2, "condition": "next_mission_same_opponent_after_failure"}
+    }
   },
   {
     "name": "Quick Learner",
     "xp_cost": 0,
-    "description": "Picks up new skills faster than most."
+    "description": "Picks up new skills faster than most.",
+    "effects": {
+      "xp_gain": 0.1
+    }
   },
   {
     "name": "Striver",
     "xp_cost": 0,
-    "description": "Dedicated to self-improvement."
+    "description": "Dedicated to self-improvement.",
+    "effects": {
+      "attribute_upgrade_cost_reduction": 0.1
+    }
   },
   {
     "name": "Survivor",
     "xp_cost": 10,
-    "description": "Very hard to kill during episodes of mass violence."
+    "description": "Very hard to kill during episodes of mass violence.",
+    "effects": {
+      "security": {"value": 3, "missions_targeting_location": ["Increase Unrest", "Strategic Nuclear Barrage"]}
+    }
   },
   {
     "name": "Crew",
     "xp_cost": 0,
-    "description": "Has a small team of loyal followers who serve as bodyguards and can conduct operations."
+    "description": "Has a small team of loyal followers who serve as bodyguards and can conduct operations.",
+    "effects": {
+      "security": 1,
+      "mission_rolls": {"value": 1}
+    }
   },
   {
     "name": "Counselor",
     "xp_cost": 20,
-    "description": "Appeals to what we have in common."
+    "description": "Appeals to what we have in common.",
+    "effects": {
+      "persuasion": {"value": 2, "condition": "cohesion >= 6"}
+    }
   },
   {
     "name": "Unifier",
     "xp_cost": 40,
-    "description": "Influential in nations with a sense of common purpose."
+    "description": "Influential in nations with a sense of common purpose.",
+    "effects": {
+      "persuasion": {"value": 3, "condition": "cohesion >= 6"},
+      "monthly_influence_income": 5
+    }
   },
   {
     "name": "Affluent",
     "xp_cost": 10,
-    "description": "Makes a good living."
+    "description": "Makes a good living.",
+    "effects": {
+      "monthly_money_income": 10
+    }
   },
   {
     "name": "Prosperous",
     "xp_cost": 20,
-    "description": "Well-off and able to contribute meaningful funds to the cause."
+    "description": "Well-off and able to contribute meaningful funds to the cause.",
+    "effects": {
+      "monthly_money_income": 20
+    }
   },
   {
     "name": "Wealthy",
     "xp_cost": 40,
-    "description": "Has access to a hefty bank account."
+    "description": "Has access to a hefty bank account.",
+    "effects": {
+      "monthly_money_income": 40
+    }
   },
   {
     "name": "Astronomer",
     "xp_cost": 0,
-    "description": "An expert in the study of Space Science."
+    "description": "An expert in the study of Space Science.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Space Science"},
+      "monthly_research_income": {"value": 5, "field": "Space Science"}
+    }
   },
   {
     "name": "Chemist",
     "xp_cost": 0,
-    "description": "An expert in the study of Materials."
+    "description": "An expert in the study of Materials.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Materials"},
+      "monthly_research_income": {"value": 5, "field": "Materials"}
+    }
   },
   {
     "name": "Doctor",
     "xp_cost": 0,
-    "description": "An expert in the study of Life Science."
+    "description": "An expert in the study of Life Science.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Life Science"},
+      "monthly_research_income": {"value": 5, "field": "Life Science"}
+    }
   },
   {
     "name": "Physicist",
     "xp_cost": 0,
-    "description": "An expert in the study of Energy."
+    "description": "An expert in the study of Energy.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Energy"},
+      "monthly_research_income": {"value": 5, "field": "Energy"}
+    }
   },
   {
     "name": "Computer Scientist",
     "xp_cost": 0,
-    "description": "An expert in a study of Information Science."
+    "description": "An expert in a study of Information Science.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Information Science"},
+      "monthly_research_income": {"value": 5, "field": "Information Science"}
+    }
   },
   {
     "name": "Military Scientist",
     "xp_cost": 0,
-    "description": "An expert in the study of Military Science."
+    "description": "An expert in the study of Military Science.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Military Science"},
+      "monthly_research_income": {"value": 5, "field": "Military Science"}
+    }
   },
   {
     "name": "Social Scientist",
     "xp_cost": 0,
-    "description": "An expert in the study of Social Science."
+    "description": "An expert in the study of Social Science.",
+    "effects": {
+      "science": {"value": 2, "missions": ["Research Project"], "field": "Social Science"},
+      "monthly_research_income": {"value": 5, "field": "Social Science"}
+    }
   },
   {
     "name": "Connected",
     "xp_cost": 20,
-    "description": "Able to use back channels to exert a measure of influence."
+    "description": "Able to use back channels to exert a measure of influence.",
+    "effects": {
+      "monthly_influence_income": 5,
+      "espionage": {"value": 1, "missions": ["Turn Councillor"]}
+    }
   },
   {
     "name": "Puppet Master",
     "xp_cost": 40,
-    "description": "Able to pull strings in many places without notice."
+    "description": "Able to pull strings in many places without notice.",
+    "effects": {
+      "monthly_influence_income": 10,
+      "espionage": {"value": 2, "missions": ["Turn Councillor", "Hostile Takeover"]}
+    }
   },
   {
     "name": "Low Profile",
     "xp_cost": 0,
-    "description": "Skilled at evading detection."
+    "description": "Skilled at evading detection.",
+    "effects": {
+      "espionage_when_detected": -2
+    }
   },
   {
     "name": "Undercover",
     "xp_cost": 0,
-    "description": "This person's public persona conceals someone who is able to infiltrate enemy space installations without fear of identification."
+    "description": "This person's public persona conceals someone who is able to infiltrate enemy space installations without fear of identification.",
+    "effects": {
+      "immune": ["detection in Infiltrate Space Asset"]
+    }
   },
   {
     "name": "Agitator",
     "xp_cost": 20,
-    "description": "Excels at gaining the support of those unhappy with their nation."
+    "description": "Excels at gaining the support of those unhappy with their nation.",
+    "effects": {
+      "persuasion": {"value": 2, "missions": ["Public Campaign"], "condition": "unrest >= 6"}
+    }
   }
 ]
