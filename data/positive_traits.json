@@ -4,8 +4,8 @@
     "xp_cost": 20,
     "description": "A member of a recognized government with official status.",
     "effects": {
-      "persuasion": {"value": 2, "condition": "government >= 6"},
-      "monthly_influence_income": 5
+      "persuasion": {"value": 1},
+      "monthly_influence_income": 3
     }
   },
   {
@@ -13,8 +13,7 @@
     "xp_cost": 0,
     "description": "Always means exactly what he or she says.",
     "effects": {
-      "persuasion": {"value": 1, "missions": ["Public Campaign", "Inspire"]},
-      "espionage_when_detected": -1
+      "persuasion": {"value": 1, "missions": ["Public Campaign"]}
     }
   },
   {
@@ -22,8 +21,7 @@
     "xp_cost": 0,
     "description": "Believes the end of humanity is nigh and wishes others to do so.",
     "effects": {
-      "persuasion": {"value": 2, "condition": "unrest >= 6"},
-      "grants": ["Increase Unrest"]
+      "persuasion": {"value": 1, "missions": ["Public Campaign"], "condition": "unrest >= 5"}
     }
   },
   {
@@ -31,7 +29,7 @@
     "xp_cost": 0,
     "description": "Particularly skilled at detecting other councillors.",
     "effects": {
-      "investigation": {"value": 2, "missions": ["Investigate Councillor"]}
+      "investigation": {"value": 1, "missions": ["Investigate Councillor"]}
     }
   },
   {
@@ -39,7 +37,7 @@
     "xp_cost": 0,
     "description": "Popular regardless of their loyalties.",
     "effects": {
-      "public_opinion_gain": {"value": 0.1, "missions": ["Public Campaign"]}
+      "persuasion": {"value": 1, "missions": ["Public Campaign"]}
     }
   },
   {
@@ -47,7 +45,7 @@
     "xp_cost": 20,
     "description": "Will strike back if attacked.",
     "effects": {
-      "counterattack": {"security_penalty": 2, "triggers": ["Assassinate", "Detain"]}
+      "security": {"value": 2}
     }
   },
   {
@@ -55,8 +53,7 @@
     "xp_cost": 20,
     "description": "Skilled at navigating dark corners in his or her home nation.",
     "effects": {
-      "espionage": {"value": 2, "condition": "home_nation"},
-      "security": {"value": 2, "condition": "home_nation"}
+      "espionage": {"value": 1}
     }
   },
   {
@@ -64,8 +61,8 @@
     "xp_cost": 150,
     "description": "In too important a position to be safely deleted.",
     "effects": {
-      "immune": ["Assassinate", "Detain"],
-      "espionage_when_detected": -2
+      "security": {"value": 3},
+      "monthly_influence_income": 5
     }
   },
   {
@@ -73,8 +70,7 @@
     "xp_cost": 0,
     "description": "A former member of his or her home nation's armed forces.",
     "effects": {
-      "command": {"value": 1, "condition": "home_nation"},
-      "security": {"value": 1, "condition": "home_nation"}
+      "command": {"value": 1}
     }
   },
   {
@@ -82,7 +78,7 @@
     "xp_cost": 0,
     "description": "An efficient killer.",
     "effects": {
-      "espionage": {"value": 3, "missions": ["Assassinate"]}
+      "espionage": {"value": 1, "missions": ["Assassinate"]}
     }
   },
   {
@@ -90,7 +86,7 @@
     "xp_cost": 0,
     "description": "It's payback time.",
     "effects": {
-      "all_attributes": {"value": 2, "condition": "next_mission_same_opponent_after_failure"}
+      "espionage": {"value": 1, "missions": ["Assassinate", "Turn Councillor"]}
     }
   },
   {
@@ -98,7 +94,7 @@
     "xp_cost": 0,
     "description": "Picks up new skills faster than most.",
     "effects": {
-      "xp_gain": 0.1
+      "xp_gain": {"value": 5, "condition": "successful_mission"}
     }
   },
   {
@@ -106,7 +102,7 @@
     "xp_cost": 0,
     "description": "Dedicated to self-improvement.",
     "effects": {
-      "attribute_upgrade_cost_reduction": 0.1
+      "xp_gain": {"value": 5, "condition": "successful_mission"}
     }
   },
   {
@@ -114,7 +110,7 @@
     "xp_cost": 10,
     "description": "Very hard to kill during episodes of mass violence.",
     "effects": {
-      "security": {"value": 3, "missions_targeting_location": ["Increase Unrest", "Strategic Nuclear Barrage"]}
+      "security": {"value": 1}
     }
   },
   {
@@ -122,8 +118,7 @@
     "xp_cost": 0,
     "description": "Has a small team of loyal followers who serve as bodyguards and can conduct operations.",
     "effects": {
-      "security": 1,
-      "mission_rolls": {"value": 1}
+      "security": {"value": 1}
     }
   },
   {
@@ -131,7 +126,7 @@
     "xp_cost": 20,
     "description": "Appeals to what we have in common.",
     "effects": {
-      "persuasion": {"value": 2, "condition": "cohesion >= 6"}
+      "persuasion": {"value": 1}
     }
   },
   {
@@ -139,8 +134,8 @@
     "xp_cost": 40,
     "description": "Influential in nations with a sense of common purpose.",
     "effects": {
-      "persuasion": {"value": 3, "condition": "cohesion >= 6"},
-      "monthly_influence_income": 5
+      "persuasion": {"value": 2},
+      "monthly_influence_income": 3
     }
   },
   {
@@ -148,7 +143,7 @@
     "xp_cost": 10,
     "description": "Makes a good living.",
     "effects": {
-      "monthly_money_income": 10
+      "monthly_money_income": 5
     }
   },
   {
@@ -156,7 +151,7 @@
     "xp_cost": 20,
     "description": "Well-off and able to contribute meaningful funds to the cause.",
     "effects": {
-      "monthly_money_income": 20
+      "monthly_money_income": 10
     }
   },
   {
@@ -164,7 +159,7 @@
     "xp_cost": 40,
     "description": "Has access to a hefty bank account.",
     "effects": {
-      "monthly_money_income": 40
+      "monthly_money_income": 20
     }
   },
   {
@@ -172,8 +167,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Space Science.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Space Science"},
-      "monthly_research_income": {"value": 5, "field": "Space Science"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -181,8 +175,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Materials.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Materials"},
-      "monthly_research_income": {"value": 5, "field": "Materials"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -190,8 +183,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Life Science.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Life Science"},
-      "monthly_research_income": {"value": 5, "field": "Life Science"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -199,8 +191,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Energy.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Energy"},
-      "monthly_research_income": {"value": 5, "field": "Energy"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -208,8 +199,7 @@
     "xp_cost": 0,
     "description": "An expert in a study of Information Science.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Information Science"},
-      "monthly_research_income": {"value": 5, "field": "Information Science"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -217,8 +207,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Military Science.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Military Science"},
-      "monthly_research_income": {"value": 5, "field": "Military Science"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -226,8 +215,7 @@
     "xp_cost": 0,
     "description": "An expert in the study of Social Science.",
     "effects": {
-      "science": {"value": 2, "missions": ["Research Project"], "field": "Social Science"},
-      "monthly_research_income": {"value": 5, "field": "Social Science"}
+      "science": {"value": 1, "missions": ["Research Project"]}
     }
   },
   {
@@ -235,8 +223,7 @@
     "xp_cost": 20,
     "description": "Able to use back channels to exert a measure of influence.",
     "effects": {
-      "monthly_influence_income": 5,
-      "espionage": {"value": 1, "missions": ["Turn Councillor"]}
+      "monthly_influence_income": 3
     }
   },
   {
@@ -244,8 +231,8 @@
     "xp_cost": 40,
     "description": "Able to pull strings in many places without notice.",
     "effects": {
-      "monthly_influence_income": 10,
-      "espionage": {"value": 2, "missions": ["Turn Councillor", "Hostile Takeover"]}
+      "monthly_influence_income": 5,
+      "espionage": {"value": 1}
     }
   },
   {
@@ -253,7 +240,7 @@
     "xp_cost": 0,
     "description": "Skilled at evading detection.",
     "effects": {
-      "espionage_when_detected": -2
+      "espionage": {"value": 1}
     }
   },
   {
@@ -261,7 +248,7 @@
     "xp_cost": 0,
     "description": "This person's public persona conceals someone who is able to infiltrate enemy space installations without fear of identification.",
     "effects": {
-      "immune": ["detection in Infiltrate Space Asset"]
+      "espionage": {"value": 1, "missions": ["Infiltrate Space Asset"]}
     }
   },
   {
@@ -269,7 +256,7 @@
     "xp_cost": 20,
     "description": "Excels at gaining the support of those unhappy with their nation.",
     "effects": {
-      "persuasion": {"value": 2, "missions": ["Public Campaign"], "condition": "unrest >= 6"}
+      "persuasion": {"value": 1, "missions": ["Public Campaign"]}
     }
   }
 ]
