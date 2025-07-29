@@ -107,7 +107,9 @@ Beyond the shadow war on Earth lies the next frontier: space. Factions can desig
 ### **9.1. Data Structures**
 
 * **Councillor Object:**  
-  {  
+
+ ``` 
+{  
     "discord\_id": "user\_id",  
     "character\_name": "string",  
     "faction": "string",  
@@ -126,16 +128,22 @@ Beyond the shadow war on Earth lies the next frontier: space. Factions can desig
     "location": "Earth | hab\_id",  
     "controlled\_orgs": \["org\_id\_1", "org\_id\_2"\]  
   }
+```
 
 * **Hab Object:**  
+
+```
   {  
     "hab\_id": "string",  
     "owner\_faction": "string",  
     "location": "Low Earth Orbit | Lunar Orbit | Mars Surface",  
     "modules": \["module\_id\_1", "module\_id\_2"\]  
   }
+```
 
 * **Nation Object:**  
+
+```
   {  
     "nation\_name": "string",  
     "total\_cp": "integer",  
@@ -146,8 +154,11 @@ Beyond the shadow war on Earth lies the next frontier: space. Factions can desig
       {"faction": "faction\_name", "opinion\_score": "integer"}  
     \]  
   }
+```
 
 * **Org Object:**  
+
+```
   {  
     "org\_id": "string",  
     "org\_name": "string",  
@@ -164,6 +175,7 @@ Beyond the shadow war on Earth lies the next frontier: space. Factions can desig
     "difficulty": "integer",  
     "grants\_mission": "string"  
   }
+```
 
 ### **9.2. Mission Resolution Logic**
 
