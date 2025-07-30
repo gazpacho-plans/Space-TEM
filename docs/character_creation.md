@@ -68,8 +68,8 @@ Players create a single Councillor to represent their agent in *Space TEM 3*. Th
 - Timeout: Interactive elements (dropdowns, buttons) expire after 60 seconds, canceling the process.
 
 ### Example
-**Command**: `/create_councillor Jane Doe`
-**Step 1 (Faction Select)**: Embed with dropdown: "Choose a Faction: The Academy, Humanity First..." + Select button.
-**Step 2 (Faction Confirm)**: On Select, embed updates: "The Initiative: Driven by corporate power... Choose a Profession: Spy, Diplomat..." + Select button.
-**Step 3 (Profession Select)**: On Select, embed updates: "Spy: A covert operative skilled in gathering secrets and subterfuge. Missions: Investigate, Hostile Takeover. Attributes: Espionage: 6-6, etc." + Create/Cancel buttons.
-**Step 4 (On Create)**:
+**Command**: `/create_councillor Jane Doe`  
+**Step 1 (Faction Select)**: Embed with dropdown: "Choose a Faction: The Academy, Humanity First..." + Select button.  
+**Step 2 (Faction Confirm)**: On Select, embed updates: "The Initiative: Driven by corporate power... Choose a Profession: Spy, Diplomat..." + Select button.  
+**Step 3 (Profession Select)**: On Select, embed updates: "Spy: A covert operative skilled in gathering secrets and subterfuge. Missions: Investigate, Hostile Takeover. Attributes: Espionage: 6-6, etc." + Create/Cancel buttons.  
+**Step 4 (On Create)**:  
