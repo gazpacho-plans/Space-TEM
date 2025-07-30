@@ -9,8 +9,8 @@ Players create a single Councillor to represent their agent in *Space TEM 3*. Th
 1. **Command Invocation**: Player runs `/create_councillor [name]` (name is unique per player).
 2. **Faction Selection**: Bot responds with a select menu (dropdown) listing factions from `factions.json` and a "Select" button. Selection updates the message with the faction description (e.g., "The Initiative: Driven by corporate power..."). Player must click Select to confirm.
 3. **Profession Selection**: After faction confirmation, bot updates with a select menu listing core professions from `professions.json`, plus:
-   - Profession description (add to `professions.json`, e.g., "Spy: A trained gatherer of information by covert means.").
-   - Starting missions from `profession_missions.json` (e.g., Spy: Investigate, Hostile Takeover).
+   - Profession description (e.g., "Spy: A covert operative skilled in gathering secrets and subterfuge.").
+   - Starting missions (e.g., Spy: Investigate, Hostile Takeover).
    - Attribute ranges preview (e.g., Espionage: 6-6).
    - A "Select" button to confirm the profession.
 4. **Confirmation**: After profession confirmation, bot shows a preview embed with faction, profession, and name, plus "Create" and "Cancel" buttons. Timeout after 60 seconds.
@@ -46,7 +46,7 @@ Players create a single Councillor to represent their agent in *Space TEM 3*. Th
   - Councillor name, faction, profession, Discord username.
   - Attributes (e.g., Persuasion: 4, Investigation: 5).
   - Traits with descriptions and effects (e.g., Beloved: Popular regardless of their loyalties. (+1 Persuasion for Public Campaign, +0 income)).
-  - Available Missions: List from profession (e.g., Investigate, Hostile Takeover).
+  - Available Missions: List from profession’s `missions` field (e.g., Investigate, Hostile Takeover).
   - Income Breakdown: For each resource (e.g., Money: 0 base + 20 Wealthy + 0 Orgs = 20/month).
   - Controlled Orgs: Empty (starting value).
 - The Councillor object is saved to the database with:
@@ -68,8 +68,8 @@ Players create a single Councillor to represent their agent in *Space TEM 3*. Th
 - Timeout: Interactive elements (dropdowns, buttons) expire after 60 seconds, canceling the process.
 
 ### Example
-**Command**: `/create_councillor Jane Doe`  
-**Step 1 (Faction Select)**: Embed with dropdown: "Choose a Faction: The Academy, Humanity First..." + Select button.  
-**Step 2 (Faction Confirm)**: On Select, embed updates: "The Initiative: Driven by corporate power... Choose a Profession: Spy, Diplomat..." + Select button.  
-**Step 3 (Profession Select)**: On Select, embed updates: "Spy: A trained gatherer of information by covert means. Missions: Investigate, Hostile Takeover. Attributes: Espionage: 6-6, etc." + Create/Cancel buttons.  
-**Step 4 (On Create)**: embed displays character sheet data from database.
+**Command**: `/create_councillor Jane Doe`
+**Step 1 (Faction Select)**: Embed with dropdown: "Choose a Faction: The Academy, Humanity First..." + Select button.
+**Step 2 (Faction Confirm)**: On Select, embed updates: "The Initiative: Driven by corporate power... Choose a Profession: Spy, Diplomat..." + Select button.
+**Step 3 (Profession Select)**: On Select, embed updates: "Spy: A covert operative skilled in gathering secrets and subterfuge. Missions: Investigate, Hostile Takeover. Attributes: Espionage: 6-6, etc." + Create/Cancel buttons.
+**Step 4 (On Create)**:
