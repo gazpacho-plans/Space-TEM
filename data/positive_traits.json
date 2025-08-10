@@ -256,7 +256,7 @@
     "xp_cost": 20,
     "description": "Excels at gaining the support of those unhappy with their nation.",
     "effects": {
-      "persuasion": {"value": 1, "missions": ["Public Campaign"]}
+      "persuasion": {"value": 1, "missions": ["Public Campaign"], "condition": "unrest >= 2"}
     }
   }
 ]
