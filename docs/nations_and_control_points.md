@@ -1,4 +1,3 @@
-```markdown
 # Nations & Control Points Mechanic Spec v0.4
 
 ## Overview
@@ -177,4 +176,3 @@ Nations represent political units on Earth, divided into tiers with a fixed numb
 - `professions.json`: Mission access (GDD Section 9.5).
 - `positive_traits.json`: Unrest conditions (GDD Section 9.4.1).
 - GDD Sections: 9.2 (Mission Resolution), 5 (Resources), 9.7 (Projects), 9.2.13 (Launch Hab).
-```
