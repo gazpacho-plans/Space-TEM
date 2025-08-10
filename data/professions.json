@@ -9,7 +9,7 @@
     "Security": [2, 6],
     "XP_Cost": 0,
     "description": "A master of underworld networks, adept at covert operations and leadership.",
-    "missions": ["Control Nation", "Hostile Takeover", "Turn Councillor"]
+    "missions": ["Control Nation", "Hostile Takeover", "Turn Councillor", "Increase Unrest", "Coup Nation"]
   },
   "Professor": {
     "Persuasion": [1, 7],
@@ -33,7 +33,7 @@
     "Security": [4, 6],
     "XP_Cost": 20,
     "description": "A military leader skilled in commanding forces and securing assets.",
-    "missions": ["Control Nation", "Protect Target"]
+    "missions": ["Control Nation", "Protect Target", "Stabilize Nation", "Coup Nation"]
   },
   "Governor": {
     "Persuasion": [4, 8],
@@ -45,7 +45,7 @@
     "Security": [2, 4],
     "XP_Cost": 20,
     "description": "A political leader excelling in diplomacy and governance.",
-    "missions": ["Public Campaign", "Control Nation", "Purchase Org"]
+    "missions": ["Public Campaign", "Control Nation", "Purchase Org", "Stabilize Nation"]
   },
   "Celebrity": {
     "Persuasion": [6, 8],
@@ -69,7 +69,7 @@
     "Security": [2, 6],
     "XP_Cost": 0,
     "description": "A revolutionary fighter, adept at espionage and leadership.",
-    "missions": ["Control Nation", "Sabotage Project"]
+    "missions": ["Control Nation", "Sabotage Project", "Increase Unrest", "Coup Nation"]
   },
   "Spy": {
     "Persuasion": [2, 6],
@@ -81,7 +81,7 @@
     "Security": [3, 5],
     "XP_Cost": 10,
     "description": "A covert operative skilled in gathering secrets and subterfuge.",
-    "missions": ["Hostile Takeover", "Investigate", "Steal Project", "Turn Councillor"]
+    "missions": ["Hostile Takeover", "Investigate", "Steal Project", "Turn Councillor", "Increase Unrest", "Coup Nation"]
   },
   "Executive": {
     "Persuasion": [1, 7],
@@ -105,7 +105,7 @@
     "Security": [2, 6],
     "XP_Cost": 20,
     "description": "A daring pilot, excelling in space missions and research.",
-    "missions": ["Manage Project", "Investigate Alien Activity", "Execute Transfer"]
+    "missions": ["Manage Project", "Investigate Alien Activity", "Execute Transfer", "Build Launch Facility"]
   },
   "Inspector": {
     "Persuasion": [2, 4],
@@ -117,7 +117,7 @@
     "Security": [3, 5],
     "XP_Cost": 0,
     "description": "A meticulous investigator, uncovering secrets and protecting assets.",
-    "missions": ["Protect Target", "Investigate"]
+    "missions": ["Protect Target", "Investigate", "Stabilize Nation"]
   },
   "Operative": {
     "Persuasion": [1, 3],
@@ -129,7 +129,7 @@
     "Security": [3, 5],
     "XP_Cost": 0,
     "description": "A versatile agent, skilled in espionage and small-scale combat.",
-    "missions": ["Protect Target", "Sabotage Project"]
+    "missions": ["Protect Target", "Sabotage Project", "Increase Unrest", "Coup Nation"]
   },
   "Tycoon": {
     "Persuasion": [0, 5],
@@ -153,7 +153,7 @@
     "Security": [1, 3],
     "XP_Cost": 20,
     "description": "A strategic leader, driving research and covert operations.",
-    "missions": ["Manage Project", "Investigate Alien Activity", "Execute Transfer"]
+    "missions": ["Manage Project", "Investigate Alien Activity", "Execute Transfer", "Build Launch Facility"]
   },
   "Journalist": {
     "Persuasion": [4, 8],
@@ -165,7 +165,7 @@
     "Security": [0, 1],
     "XP_Cost": 0,
     "description": "A truth-seeker, influencing public opinion and uncovering secrets.",
-    "missions": ["Public Campaign", "Investigate"]
+    "missions": ["Public Campaign", "Investigate", "Increase Unrest", "Stabilize Nation"]
   },
   "Activist": {
     "Persuasion": [4, 8],
@@ -177,7 +177,7 @@
     "Security": [0, 1],
     "XP_Cost": 10,
     "description": "A passionate advocate, rallying support for social change.",
-    "missions": ["Public Campaign"]
+    "missions": ["Public Campaign", "Increase Unrest", "Coup Nation"]
   },
   "Tech Mogul": {
     "Persuasion": [2, 6],
@@ -213,7 +213,7 @@
     "Security": [3, 5],
     "XP_Cost": 0,
     "description": "A skilled negotiator, fostering alliances and acquiring influence.",
-    "missions": ["Public Campaign", "Purchase Org"]
+    "missions": ["Public Campaign", "Purchase Org", "Stabilize Nation"]
   },
   "Judge": {
     "Persuasion": [3, 7],
@@ -225,7 +225,7 @@
     "Security": [2, 4],
     "XP_Cost": 0,
     "description": "A legal authority, influencing policy and uncovering truths.",
-    "missions": []
+    "missions": ["Stabilize Nation"]
   },
   "Hacker": {
     "Persuasion": [0, 4],
@@ -237,7 +237,7 @@
     "Security": [0, 3],
     "XP_Cost": 0,
     "description": "A cyber expert, breaching networks and gathering intelligence.",
-    "missions": ["Hostile Takeover", "Investigate", "Steal Project"]
+    "missions": ["Hostile Takeover", "Investigate", "Steal Project", "Increase Unrest"]
   },
   "Fixer": {
     "Persuasion": [2, 4],
@@ -249,7 +249,7 @@
     "Security": [0, 4],
     "XP_Cost": 0,
     "description": "A problem-solver, adept at covert deals and quick fixes.",
-    "missions": ["Hostile Takeover", "Protect Target", "Turn Councillor"]
+    "missions": ["Hostile Takeover", "Protect Target", "Turn Councillor", "Increase Unrest", "Stabilize Nation"]
   },
   "Captain": {
     "Persuasion": [1, 1],
@@ -273,6 +273,18 @@
     "Security": [0, 4],
     "XP_Cost": 0,
     "description": "A charismatic preacher, inspiring loyalty and public support.",
-    "missions": ["Public Campaign"]
+    "missions": ["Public Campaign", "Increase Unrest", "Stabilize Nation"]
+  },
+  "Scientist": {
+    "Persuasion": [1, 3],
+    "Investigation": [2, 4],
+    "Espionage": [0, 2],
+    "Command": [0, 2],
+    "Administration": [0, 3],
+    "Science": [6, 8],
+    "Security": [0, 2],
+    "XP_Cost": 20,
+    "description": "A brilliant researcher, advancing scientific projects and space exploration.",
+    "missions": ["Manage Project", "Investigate Alien Activity", "Sabotage Project", "Build Launch Facility"]
   }
 }
