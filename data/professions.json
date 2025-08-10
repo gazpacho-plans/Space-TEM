@@ -45,7 +45,7 @@
     "Security": [2, 4],
     "XP_Cost": 20,
     "description": "A political leader excelling in diplomacy and governance.",
-    "missions": ["Public Campaign", "Control Nation", "Purchase Org", "Stabilize Nation"]
+    "missions": ["Public Campaign", "Control Nation", "Purchase Org", "Stabilize Nation", "Coup Nation"]
   },
   "Celebrity": {
     "Persuasion": [6, 8],
