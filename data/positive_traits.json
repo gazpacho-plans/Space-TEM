@@ -21,7 +21,7 @@
     "xp_cost": 0,
     "description": "Believes the end of humanity is nigh and wishes others to do so.",
     "effects": {
-      "persuasion": {"value": 1, "missions": ["Public Campaign"], "condition": "unrest >= 5"}
+      "persuasion": {"value": 1, "missions": ["Public Campaign"], "condition": "unrest >= 2"}
     }
   },
   {
