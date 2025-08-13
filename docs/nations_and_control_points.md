@@ -1,4 +1,4 @@
-# Nations & Control Points Mechanic Spec v0.4
+# Nations & Control Points Mechanics v0.4
 
 ## Overview
 Nations represent political units on Earth, divided into tiers with a fixed number of Control Points (CPs) that factions compete to seize. CPs provide weekly resource yields (Funds, Influence, Ops, Boost) and enable special actions like launches. Public Opinion (PO) influences mission success, while unrest adds strategic depth. This mechanic encourages team play through coordinated PO building and defenses, with simplified simulation to avoid complexity.
