@@ -184,4 +184,62 @@ export function executiveLockReason(n: NationState, factionId: string): string |
 export function assertNationInvariants(n: NationState): void {
   const expectedCPs = CP_BY_TIER[n.tier];
   if (n.cp.length !== expectedCPs) {
-    throw new Error(`[${n.id}] cp.length=${n.cp.length} but tier
+    throw new Error(`[${n.id}] cp.length=${n.cp.length} but tier '${n.tier}' expects ${expectedCPs}`);
+  }
+  const last = n.cp.at(-1)!;
+  if (last.kind !== "executive") {
+    throw new Error(`[${n.id}] last CP must be 'executive'`);
+  }
+  for (const [f, v] of Object.entries(n.po)) {
+    if (!Number.isFinite(v) || v < 0 || v > 100) {
+      throw new Error(`[${n.id}] PO for faction '${f}' is out of bounds: ${v}`);
+    }
+  }
+  if (!isBounded(n.unrest, 0, 5)) throw new Error(`[${n.id}] unrest out of bounds: ${n.unrest}`);
+  if (!isBounded(n.prosperity, 1, 5)) throw new Error(`[${n.id}] prosperity out of bounds: ${n.prosperity}`);
+}
+
+// ———————————————————————————————————————————————————————————————————————
+// Utils
+// ———————————————————————————————————————————————————————————————————————
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v));
+}
+function isBounded(v: number, lo: number, hi: number): boolean {
+  return Number.isFinite(v) && v >= lo && v <= hi;
+}
+
+// ———————————————————————————————————————————————————————————————————————
+// Example (commented):
+// 
+// const JPN: NationAuthoring = {
+//   id: "JPN",
+//   name: "Japan",
+//   tier: "major",
+//   economyProfile: "industrial",
+//   baseSecurity: 6,
+//   startProsperity: 4,
+//   startUnrest: 1,
+//   startPO: { Academy: 72, Servants: 18, Protectorate: 4 },
+//   startFlags: ["launch_capability"],
+//   startModifiers: ["industrial_policy_money_10"]
+// };
+// 
+// const nation = compileNation(JPN, {
+//   turn: 1,
+//   initialOwners: [ "Academy", "Academy", null, null, null, null ],
+//   resolveModifier: (id) => {
+//     switch (id) {
+//       case "industrial_policy_money_10":
+//         return { stage: "capacity", source: "project", effect: { kind: "yield_mult", money: 1.10 } };
+//       default:
+//         return null;
+//     }
+//   }
+// });
+// 
+// // To compute/explain income, call functions from economy.ts:
+// //   computeFactionIncomeInNation(nation, "Academy")
+// //   explainIncome(nation, "Academy")
+// ———————————————————————————————————————————————————————————————————————
