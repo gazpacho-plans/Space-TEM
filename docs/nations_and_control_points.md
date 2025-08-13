@@ -1,178 +1,262 @@
-# Nations & Control Points Mechanics v0.4
+# Space TEM — Nations v0.5 (TypeScript‑backed Data & Rules)
 
-## Overview
-Nations represent political units on Earth, divided into tiers with a fixed number of Control Points (CPs) that factions compete to seize. CPs provide weekly resource yields (Funds, Influence, Ops, Boost) and enable special actions like launches. Public Opinion (PO) influences mission success, while unrest adds strategic depth. This mechanic encourages team play through coordinated PO building and defenses, with simplified simulation to avoid complexity.
+**Scope**: Replaces the old nation object/CP spec with a two‑layer TypeScript system (Authoring → Runtime). Removes duplicated fields, clarifies Executive gating, and standardizes a future‑proof modifiers framework.
 
-## Mechanics
+**Why**: Authors keep data minimal and readable; the game expands it into rich, validated runtime state. This avoids drift and makes later features (events, traits, projects) plug‑and‑play.
 
-### Nation Tiers and CPs
-- Nations are categorized by tier, determining CP count and yields.
-- **CP by Tier**:
-  - **Major**: 6 CPs (including 1 Executive).
-  - **Regional**: 4 CPs (including 1 Executive).
-  - **Minor**: 2 CPs (including 1 Executive).
-  - **Micro**: 1 CP (Executive = the single CP).
-- The Executive CP is the last CP (special rules in Section 6.3).
+---
 
-### Per-CP Yields (Per Week)
-- Yields are per CP owned, before optional Prosperity multiplier.
-- **Per-CP Yields Table**:
-  | Tier     | 💰 Funds | ✨ Influence | ⚔️ Ops | 🚀 Boost/MC |
-  | -------- | -------- | ----------- | ------ | ----------- |
-  | Major    | 6        | 2           | 1      | 0.25        |
-  | Regional | 4        | 1           | 1      | 0.15        |
-  | Minor    | 2        | 1           | 0      | 0.10        |
-  | Micro    | 1        | 0           | 0      | 0.05        |
+## 1) Design goals
 
-### Prosperity Multiplier (Optional)
-- A 1–5 knob to scale yields.
-- **Multiplier Table**:
-  | Prosperity | Multiplier |
-  | :--------- | :--------- |
-  | 1          | 0.8×       |
-  | 2          | 0.9×       |
-  | 3          | 1.0×       |
-  | 4          | 1.1×       |
-  | 5          | 1.2×       |
+- **Single source of truth** for CP count → `tier` only. No `cp_total` field.
+- **Executive is a rule**, not a stored index → last CP is `kind:"executive"` and gate‐locked by logic.
+- **Structured ownership** → CP slots carry `owner`, `defense`, and `tags` (not loose strings).
+- **Extensible modifiers** → one normalized `modifiers[]` array for yields, DC deltas, flags, etc.
+- **Consistent vocabulary** → Resources are **Money, Influence, Operations (Ops), Boost**.
 
-### Launch Capability
-- Flag enabling launches and +1 🚀/week to the Executive holder.
-- Established via *Build Launch Facility* mission (Section 6.5).
-- Prerequisite for *Launch Hab* (GDD Section 9.2.13).
+---
 
-### Public Opinion (PO)
-- 0–100 per faction per nation; clamp after changes.
-- **PO Bonus Formula**:
-  ```
-  PO_Bonus = floor(PO / 10) − 3   # e.g., 30 = 0, 80 = +5
-  ```
-- **Thresholds**:
-  - *Control Nation* (neutral CP): Any PO.
-  - *Purge* (enemy CP): PO ≥ 40.
-  - Executive CP: PO ≥ 60 + own ≥ ⌊cp_total/2⌋ non-Executive CPs.
-- **Public Campaign Mission**:
-  - DC 12.
-  - Success: +10 PO; Crit: +20 PO; Fail: −5 PO (your faction only).
+## 2) Authoring schema (designer‑facing)
 
-### Unrest
-- 0–3 per nation; influenced by missions (Sections 6.6–6.8).
-- Ties to Traits (e.g., *Apocalyptic*: +1 Persuasion for *Public Campaign* if unrest ≥ 2).
+Use this for hand‑edited JSON/TS. Keep it minimal; everything else is derived at load.
 
-### Ops Spend (Optional for *Increase Unrest*, *Stabilize Nation*, *Coup Nation*)
-- +1 to roll per 5 Ops spent (max +4).
-- Declared on submission (attacker); defender can match if opposing.
-- Ops consumed regardless of outcome.
+```ts
+export type NationTier = "major" | "regional" | "minor" | "micro";
 
-### CP Interaction Missions (Committed Unless Stated)
-1. **Control Nation (Seize Neutral CP)**:
-   - Target: Neutral CP index.
-   - Rolls: Attacker = Persuasion + d10 + PO_Bonus; Defender = Security + d10 (if Defended).
-   - Outcomes: Success transfers CP; Crit: +5 PO (attacker).
+export type Yields = { money: number; influence: number; ops: number; boost: number };
 
-2. **Purge (Seize Enemy-Held CP)**:
-   - Requirements: PO ≥ 40.
-   - Rolls: Attacker = Command + d10 + PO_Bonus; Defender = Security + d10 + 4 (if Defended).
-   - Outcomes: Success: Transfer CP + Legitimacy shock (±5 PO); Crit Success: Remove Defend; Fail: No change; Crit Fail: +1 Heat, −5 PO (attacker).
+export type MissionKey =
+  | "public_campaign" | "control" | "purge" | "increase_unrest" | "stabilize" | "coup";
 
-3. **Protect Target (Quick)**:
-   - Target: One asset (CP, Org, Councillor) per player per turn.
-   - Effect: Asset Defended (+4 to defender rolls) until end of turn.
+export type ModifierAuthoring =
+  | { kind: "yield_mult"; money?: number; influence?: number; ops?: number; boost?: number }
+  | { kind: "mission_dc_delta"; mission: MissionKey; delta: number }
+  | { kind: "po_change"; target: "all" | string; amount: number }
+  | { kind: "security_delta"; amount: number }
+  | { kind: "unrest_delta"; amount: number }
+  | { kind: "flag"; name: string };
 
-4. **Build Launch Facility (Committed)**:
-   - Target: Nation without launch_capability.
-   - Requirements: Hold Executive CP + completed National Launch Program.
-   - Cost: 💰 200 + 🚀 10 (refunded if not met).
-   - Roll: None (deterministic).
-   - Effect: Set launch_capability = true; +1 🚀/week to Executive holder; enables *Launch Hab*.
+export type NationAuthoring = {
+  id: string;                    // canonical slug, e.g. "JPN"
+  name: string;                  // display name
+  tier: NationTier;              // ← CP count is derived from this
+  baseSecurity: number;          // opposed‑roll defense
+  startProsperity?: number;      // 1–5 (default 3)
+  startUnrest?: number;          // 0–5 (default 0)
+  startPO?: Record<string, number>; // factionId → 0..100
+  traits?: string[];             // flavor tags
+  modifiers?: ModifierAuthoring[]; // optional starting modifiers
+  yieldOverridesPerCP?: Partial<Yields>; // e.g. { boost: 0.30 }
+  notes?: string;
+  startOwners?: (string | null)[]; // optional initial owners by CP index
+};
+```
 
-5. **Increase Unrest (Committed)**:
-   - Rolls: Attacker = Command + d10; Defender = Security + d10 + 4 (if Defended CP in nation).
-   - Outcomes: Success: unrest +1 (max 3) −5 PO to CP holders; Crit: unrest +2; Fail: No change; Crit Fail: +1 Heat, −5 PO (attacker).
+**Authoring example**
 
-6. **Stabilize Nation (Committed)**:
-   - Rolls: Attacker = Persuasion + d10 + 2 (if hold CP) + 2 (if hold Executive); Defender = Command + d10.
-   - Outcomes: Success: unrest −1 (min 0) +5 PO to Executive holder; Crit: unrest −2.
+```json
+{
+  "id": "JPN",
+  "name": "Japan",
+  "tier": "major",
+  "baseSecurity": 6,
+  "startProsperity": 4,
+  "startUnrest": 1,
+  "startPO": { "Academy": 72, "Servants": 18, "Protectorate": 4 },
+  "traits": ["industrial_base"],
+  "yieldOverridesPerCP": { "boost": 0.3 },
+  "modifiers": [
+    { "kind": "yield_mult", "money": 1.05, "boost": 1.1 },
+    { "kind": "flag", "name": "launch_capability" }
+  ],
+  "startOwners": ["Academy", "Academy", null, null, null, null]
+}
+```
 
-7. **Coup Nation (Committed)**:
-   - Requirements: unrest ≥ 2.
-   - Rolls: Attacker = Command + d10 + (unrest × 2); Defender = Security + d10 + 2 (if hold Executive).
-   - Outcomes: Success: All CPs neutral, remove Defend; −10 PO to former Executive holder, −5 PO to others; optional prosperity −1; Crit Fail: +2 Heat, −10 PO (attacker).
+---
 
-### Turn Sequence
-1. **Upkeep**:
-   - Compute yields (Section 9); apply Prosperity.
-   - Progress projects (Section 11).
-   - Reset Defend states.
-2. **Phase 1 (Committed)**:
-   - Submit *Public Campaign*, *Increase Unrest*, *Stabilize Nation*, *Purge*, *Control Nation*, *Build Launch Facility*.
-   - Resolution order per nation: Public Campaign → Increase Unrest/Stabilize → Purge → Control Nation → Build Launch Facility.
-3. **Phase 2 (Quick)**:
-   - Submit *Protect Target* (if no Committed action).
-4. **End of Turn**:
-   - Apply status expirations.
+## 3) Runtime schema (game‑facing)
 
-### Data to Track
-- **Nation JSON Example**:
-  ```
-  {
-    "id": "USA",
-    "name": "United States",
-    "tier": "Major",
-    "cp_total": 6,
-    "executive_index": 5,
-    "prosperity": 4,
-    "launch_capability": true,
-    "unrest": 1,
-    "owners": [
-      {"faction": "The Initiative", "cp": 5},
-      {"faction": "Humanity First", "cp": 0}
-    ],
-    "po": {"The Initiative": 62, "Humanity First": 20, "The Protectorate": 10, "The Academy": 8},
-    "cp_status": {
-      "3": {"defended_by": null}
-    }
-  }
-  ```
-- **Per-CP Transient States**: `defended_by: faction_id | null` (cleared at end of turn).
+The loader compiles Authoring → Runtime on startup. No duplication; everything consistent.
 
-## Examples
-**Example 1 — Income Calculation**:
-- Regional nation (4 CPs), Prosperity 3 (1.0×), ownership: The Initiative = 2 CPs.
-- Per-CP yields: 💰4, ✨1, ⚔️1, 🚀0.15.
-- Initiative income: 2 × (4,1,1,0.15) = (8,2,2,0.3).
-- Split among 2 players: Each gets (4,1,1,0.15) + character sheet income (e.g., Traits, Orgs).
-- If launch_capability = true: +1 🚀 to Executive holder, split equally.
+```ts
+export type CPKind = "regular" | "executive";
 
-**Example 2 — Purge Mission**:
-- Attacker Command 6, PO 72 (PO_Bonus +4), rolls d10 = 7 → 6 + 7 + 4 = 17.
-- Defender Security 5, Defended (+4), rolls d10 = 5 → 5 + 5 + 4 = 14.
-- Success (17 > 14): Transfer CP, +5 PO attacker, −5 PO defender. No unrest impact.
+export interface CPState {
+  index: number;                       // 0..(n-1)
+  kind: CPKind;                        // executive is always the last slot
+  owner: string | null;                // factionId or null
+  defense?: { byPlayerId: string; expiresOnTurn: number };
+  tags?: string[];                     // e.g. ["capital", "spaceport"]
+  locked?: { reason: string };         // exec gate message, etc.
+}
 
-**Example 3 — Build Launch Facility**:
-- Initiative holds Executive in USA (no launch_capability).
-- Completed National Launch Program.
-- Pay 💰 200 + 🚀 10; deterministic success → launch_capability = true; +1 🚀/week to Initiative (split among players).
+export interface ModifierState {
+  id: string;                          // unique
+  source: "trait" | "project" | "event" | "mission" | "scenario";
+  effect:
+    | { kind: "yield_mult"; money?: number; influence?: number; ops?: number; boost?: number }
+    | { kind: "mission_dc_delta"; mission: MissionKey; delta: number }
+    | { kind: "po_change"; target: "all" | string; amount: number }
+    | { kind: "security_delta"; amount: number }
+    | { kind: "unrest_delta"; amount: number }
+    | { kind: "flag"; name: string; value?: boolean };
+  appliedOnTurn: number;
+  expiresOnTurn?: number;
+}
 
-## Balance Dials
-- Public Campaign DC / deltas: DC 12 / +10 / +20 / −5.
-- Defend bonus: +4.
-- Purge PO gate: PO ≥ 40.
-- Executive PO gate: PO ≥ 60.
-- Legitimacy shock on Purge success: ±5 PO.
-- Unrest range: 0–3.
-- Increase Unrest: Success +1 (crit +2) unrest; PO −5 to CP holders.
-- Stabilize Nation: Success −1 (crit −2) unrest; PO +5 to Exec holder.
-- Coup Nation: Req unrest ≥ 2; attacker bonus +2 per unrest; optional prosperity −1 on success.
-- Build Launch Facility cost: 💰 200 + 🚀 10.
-- Ops spend rate & cap: +1 per 5 Ops, max +4 (for Increase Unrest, Stabilize, Coup).
+export interface NationState {
+  id: string;
+  name: string;
+  tier: NationTier;
+  cp: CPState[];                       // generated from tier; last = executive
+  po: Record<string, number>;          // Public Opinion 0..100 per faction
+  security: number;                    // live
+  unrest: number;                      // 0..5
+  prosperity: number;                  // 1..5
+  launchCapability: boolean;           // from flags/projects
+  projects: Record<string, "locked" | "available" | "completed">;
+  modifiers: ModifierState[];          // normalized
+  yieldPerCP: Yields;                  // after any nation overrides
+  prosperityMult: number;              // e.g. 0.8..1.2
+  totalYieldEstimate: Yields;          // cp.length × yieldPerCP × prosperityMult × yieldMults
+}
+```
 
-## Future Considerations
-- **Resource Transfers**: `/transfer_resource [target_player] [amount] [type]` to send/receive resources.
-- **Dynamic Traits**: Missions may add/remove Traits based on unrest (e.g., high unrest adding Pariah).
-- **Crackdown**: Add as an optional mission to reduce unrest but increase PO penalties.
-- **Projects Expansion**: Link to full research system (GDD Section 9.7).
+---
 
-## References
-- `professions.json`: Mission access (GDD Section 9.5).
-- `positive_traits.json`: Unrest conditions (GDD Section 9.4.1).
-- GDD Sections: 9.2 (Mission Resolution), 5 (Resources), 9.7 (Projects), 9.2.13 (Launch Hab).
+## 4) Generation rules
+
+- **CP slots**: `cp.length = mapTierToCount(tier)` where counts are Major 6 / Regional 4 / Minor 2 / Micro 1.
+- **Executive slot**: last CP is `kind:"executive"` and is **gate‑locked** until the Exec rule passes.
+- **Ownership**: each CP tracks `owner` (factionId or null) plus optional `defense` status from Protect Target.
+- **Launch capability**: nation‑level boolean flag – surfaced via `flag:"launch_capability"` or projects.
+
+**Exec gate (rule, not stored)**
+
+> A faction may acquire the Executive CP if it has **PO ≥ 60** in the nation **and** owns at least **⌊cp.length/2⌋** non‑executive CPs.
+
+The loader/UI may set `cp[last].locked.reason = "Requires majority (floor) of non‑exec CPs and PO ≥ 60."` for clarity.
+
+---
+
+## 5) Economy & yields
+
+Per‑tier baseline **per‑CP** yields (edit in balance config):
+
+- **Major**: Money 6, Influence 2, Ops 1, Boost 0.25
+- **Regional**: 4, 1, 1, 0.15
+- **Minor**: 2, 1, 0, 0.10
+- **Micro**: 1, 0, 0, 0.05
+
+**Prosperity** (1–5) multiplies yields: `mult = 0.8 .. 1.2` (linear by step of 0.1). Store prosperity in runtime; it’s scenario‑driven or affected by events.
+
+**Nation overrides**: `yieldOverridesPerCP` lets a nation tweak its per‑CP baseline (e.g., a space‑focused country with +Boost).
+
+**Total yield estimate** (for UI): `cp.length × perCP × prosperityMult × (stacked yield_mult modifiers)`.
+
+---
+
+## 6) Public Opinion (PO)
+
+Store raw PO per faction on the nation (`po[factionId] = 0..100`).
+
+- **Derived bonus** (not stored): `poBonus(po) = floor(po/10) − 3` (e.g., 30→0, 80→+5).
+- **Shifts** come from missions, events, and modifiers (e.g., `{kind:"po_change", target:"all", amount:+5}`).
+
+---
+
+## 7) Missions that touch nations (interface points)
+
+This doc defines only the **nation‑side** pieces each mission needs. (Mission access/costs live in the Missions doc.)
+
+- **Public Campaign**: uses nation PO. Check style is configurable:
+
+  - **Option A (flat)**: `(Persuasion + d10) vs DC 12` → PO: +10 / +20 / −5.
+  - **Option B (per‑nation)**: `(Persuasion + d10) vs Nation Base DC` with the same outcomes.
+  - Apply any `mission_dc_delta` modifiers.
+
+- **Control Nation**: contested check uses nation **Security** on defense.
+
+  - Default: `(Persuasion + d10 + poBonus) vs (Security + d10)`
+  - Alt config (project preference): make **Command** the attacker stat. Keep the nation side unchanged.
+
+- **Purge / Increase Unrest / Stabilize / Coup**: these reference `security`, `unrest`, and optional Ops‑spend meta‑rule (below). Any defense from Protect Target on a CP grants the **defender** a +4.
+
+**Optional: Operations‑spend meta‑rule**
+
+> For **Increase Unrest, Stabilize, Coup**, attackers may spend Ops: **+1 per 5 Ops (max +4)**. Defenders may spend to match. Ops are consumed regardless of outcome.
+
+---
+
+## 8) Modifiers framework
+
+One normalized array powers all tweaks:
+
+- `yield_mult` → multiplicative economy dials.
+- `mission_dc_delta` → per‑mission difficulty seasoning.
+- `po_change`, `security_delta`, `unrest_delta` → immediate or timed state shifts.
+- `flag` → boolean capabilities (e.g., `launch_capability`).
+- Each modifier records `source`, `appliedOnTurn`, and optional `expiresOnTurn` for decay.
+
+This avoids adding ad‑hoc fields for every new rule.
+
+---
+
+## 9) Example: compiled runtime (snippet)
+
+```json
+{
+  "id": "JPN",
+  "name": "Japan",
+  "tier": "major",
+  "cp": [
+    { "index": 0, "kind": "regular", "owner": "Academy" },
+    { "index": 1, "kind": "regular", "owner": "Academy", "defense": { "byPlayerId": "p1", "expiresOnTurn": 7 } },
+    { "index": 2, "kind": "regular", "owner": null },
+    { "index": 3, "kind": "regular", "owner": null },
+    { "index": 4, "kind": "regular", "owner": null },
+    { "index": 5, "kind": "executive", "owner": null, "locked": { "reason": "Requires majority (floor) of non‑exec CPs and PO ≥ 60." } }
+  ],
+  "po": { "Academy": 72, "Servants": 18, "Protectorate": 4 },
+  "security": 6,
+  "unrest": 1,
+  "prosperity": 4,
+  "launchCapability": true,
+  "projects": {},
+  "modifiers": [
+    { "id": "m1", "source": "trait", "effect": { "kind": "yield_mult", "money": 1.05, "boost": 1.1 }, "appliedOnTurn": 1 }
+  ],
+  "yieldPerCP": { "money": 6, "influence": 2, "ops": 1, "boost": 0.3 },
+  "prosperityMult": 1.1,
+  "totalYieldEstimate": { "money": 39.6, "influence": 13.2, "ops": 6.6, "boost": 1.98 }
+}
+```
+
+---
+
+## 10) Migration checklist (from v0.4)
+
+- **Delete** `cp_total` and `executive_index`.
+- **Keep** `tier`; runtime generates `cp[]` and flags the last one as `executive`.
+- **Replace** ownership arrays with structured `cp: CPState[]` entries.
+- **Rename** resources to **Money, Influence, Operations (Ops), Boost** everywhere.
+- **Move** any special‑case nation quirks into `modifiers[]`.
+- **Centralize** the Exec gate (don’t store booleans; enforce at mission/assignment time).
+- **Optionally** adopt per‑nation Public Campaign DC via `mission_dc_delta` (otherwise keep flat DC 12).
+
+---
+
+## 11) Appendix: Rules hooks
+
+- **PO bonus** (derived only): `floor(PO/10) − 3`.
+- **Prosperity multiplier**: `0.8 + 0.1 × (prosperity − 1)` (1→0.8 … 5→1.2).
+- **Tier → CP count**: Major 6 / Regional 4 / Minor 2 / Micro 1.
+- **Protect Target**: defends **one asset** (a CP, an Org, or a Councillor) and grants +4 to the defender vs hostile missions.
+
+> Implementation lives in the TypeScript starter we ship with this doc (compileNation, canAcquireExecutive, etc.).
+
+---
+
+### End v0.5
+
