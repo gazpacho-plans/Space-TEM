@@ -1,352 +1,187 @@
-// Space TEM – Nation Schema Starter (TypeScript)
-// Drop this in src/nations.ts (or similar). No external deps required.
-// Provides: Authoring schema, Runtime schema, compileNation(), canAcquireExecutive().
+// nation_schema.ts
+// Space TEM — Nations v0.6 (TypeScript-backed data & rules)
+//
+// Single-source-of-truth:
+// - Tier sets CP count (only).
+// - Economy seed comes from economyProfile (not tier).
+// - Income math lives in economy.ts; this file defines data shapes + compile helpers.
+//
+// Minimal deps: only needs CP_BY_TIER from rules.ts.
+// You can inject a modifier catalog via `resolveModifier` when compiling.
 
-/*************************
- * Core types & constants *
- *************************/
+import { CP_BY_TIER } from "./rules";
+
+// ———————————————————————————————————————————————————————————————————————
+// Types (Authoring → Runtime)
+// ———————————————————————————————————————————————————————————————————————
+
 export type NationTier = "major" | "regional" | "minor" | "micro";
-
-export type Yields = {
-  money: number;
-  influence: number;
-  ops: number;
-  boost: number;
-};
-
-export type MissionKey =
-  | "public_campaign"
-  | "control"
-  | "purge"
-  | "increase_unrest"
-  | "stabilize"
-  | "coup";
-
-export const CP_COUNT_BY_TIER: Record<NationTier, number> = {
-  major: 6,
-  regional: 4,
-  minor: 2,
-  micro: 1,
-};
-
-// Per-CP baseline yields by tier (adjust to balance)
-export const DEFAULT_PER_TIER_YIELD: Record<NationTier, Yields> = {
-  major: { money: 6, influence: 2, ops: 1, boost: 0.25 },
-  regional: { money: 4, influence: 1, ops: 1, boost: 0.15 },
-  minor: { money: 2, influence: 1, ops: 0, boost: 0.1 },
-  micro: { money: 1, influence: 0, ops: 0, boost: 0.05 },
-};
-
-/********************************
- * Authoring (designer-facing)  *
- ********************************/
-export type ModifierAuthoring =
-  | { kind: "yield_mult"; money?: number; influence?: number; ops?: number; boost?: number }
-  | { kind: "mission_dc_delta"; mission: MissionKey; delta: number }
-  | { kind: "po_change"; target: "all" | string; amount: number }
-  | { kind: "security_delta"; amount: number }
-  | { kind: "unrest_delta"; amount: number }
-  | { kind: "flag"; name: string };
+export type EconomyProfile = "industrial" | "services" | "research" | "space";
 
 export type NationAuthoring = {
-  id: string;                    // canonical slug, e.g. "JPN"
-  name: string;                  // display name
-  tier: NationTier;              // single source of truth for CP count
-  baseSecurity: number;          // opposed-roll defense
-  startProsperity?: number;      // 1–5 (defaults to 3)
-  startUnrest?: number;          // 0–5 (defaults to 0)
-  startPO?: Record<string, number>; // factionId -> 0..100
-  traits?: string[];             // flavor tags
-  modifiers?: ModifierAuthoring[]; // optional starting modifiers
-  yieldOverridesPerCP?: Partial<Yields>; // e.g., { boost: 0.30 }
-  notes?: string;
-  // Optional: starting CP owners by index (0..n-1). If omitted, all null.
-  startOwners?: (string | null)[];
+  id: string;                  // "JPN"
+  name: string;                // "Japan"
+  tier: NationTier;            // source of CP count (see CP_BY_TIER)
+  economyProfile: EconomyProfile; // source of capacity seed (see rules.ts / economy.ts)
+  baseSecurity: number;        // used in opposed checks
+  startProsperity?: 1 | 2 | 3 | 4 | 5; // default 3
+  startUnrest?: 0 | 1 | 2 | 3 | 4 | 5; // default 0
+  startPO?: Record<string, number>;    // PO per factionId (0–100)
+  startFlags?: string[];               // e.g. ["launch_capability"]
+  // Optional: IDs from your central modifier catalog (traits/projects/events/etc.)
+  startModifiers?: string[];
 };
 
-/****************************
- * Runtime (game-facing)     *
- ****************************/
-export type CPKind = "regular" | "executive";
-
-export interface CPState {
-  index: number;                 // 0..(n-1)
-  kind: CPKind;                  // executive is always last
-  owner: string | null;          // factionId or null
-  defense?: { byPlayerId: string; expiresOnTurn: number };
-  tags?: string[];               // e.g., ["capital"]
-  locked?: { reason: string };
-}
-
-export type ModifierEffect =
-  | { kind: "yield_mult"; money?: number; influence?: number; ops?: number; boost?: number }
-  | { kind: "mission_dc_delta"; mission: MissionKey; delta: number }
-  | { kind: "po_change"; target: "all" | string; amount: number }
-  | { kind: "security_delta"; amount: number }
-  | { kind: "unrest_delta"; amount: number }
-  | { kind: "flag"; name: string; value?: boolean };
-
-export interface ModifierState {
-  id: string;                    // unique handle (e.g., "trait:industrial_base")
-  source: "trait" | "project" | "event" | "mission" | "scenario";
-  effect: ModifierEffect;
-  appliedOnTurn: number;
-  expiresOnTurn?: number;
-}
-
-export interface NationState {
+export type NationState = {
   id: string;
   name: string;
   tier: NationTier;
-  cp: CPState[];
-  po: Record<string, number>;    // 0..100 per faction
-  security: number;               // live
-  unrest: number;                 // 0..5
-  prosperity: number;             // 1..5
-  launchCapability: boolean;      // derived from flags/projects
-  projects: Record<string, "locked" | "available" | "completed">;
-  modifiers: ModifierState[];     // normalized set
-  yieldPerCP: Yields;             // after nation overrides
-  prosperityMult: number;         // e.g., 0.8..1.2
-  totalYieldEstimate: Yields;     // cp.length * yieldPerCP * prosperityMult * yieldMults
-}
+  economyProfile: EconomyProfile;
 
-/**********************
- * Rules configuration *
- **********************/
-export interface RulesConfig {
-  perTierYield: Record<NationTier, Yields>;
-  prosperityMultiplier: (prosperity: number) => number;
-  execGate: {
-    // For UI text; logic is in canAcquireExecutive()
-    poThreshold: number; // e.g., 60
-  };
-}
+  cp: CPState[];                    // generated from tier; last is executive
+  po: Record<string, number>;       // live PO per factionId (0–100)
+  security: number;                 // live
+  unrest: 0 | 1 | 2 | 3 | 4 | 5;    // live
+  prosperity: 1 | 2 | 3 | 4 | 5;    // live
 
-export const DEFAULT_RULES: RulesConfig = {
-  perTierYield: DEFAULT_PER_TIER_YIELD,
-  prosperityMultiplier: (p: number) => 0.8 + (p - 1) * 0.1, // 1→0.8, 3→1.0, 5→1.2
-  execGate: { poThreshold: 60 },
+  flags: Set<string>;               // e.g. "launch_capability"
+  modifiers: ModifierState[];       // normalized, typed effects (can expire)
+
+  // Optional place for nation-specific project states (if you want it here)
+  projects?: Record<string, "locked" | "available" | "completed">;
 };
 
-/***********************
- * Helper calculations  *
- ***********************/
-export function cpCountForTier(tier: NationTier): number {
-  return CP_COUNT_BY_TIER[tier];
-}
+export type CPState = {
+  index: number;                    // 0..n-1
+  kind: "regular" | "executive";    // last slot is always executive
+  owner: string | null;             // factionId or null
+  defenseBy?: string | null;        // playerId who cast Protect Target (cleared EOT)
+  tags?: string[];                  // future hooks (e.g., "capital", "spaceport")
+};
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
+export type EffectStage = "capacity" | "owner_share" | "post";
 
-function mergeYields(base: Yields, override?: Partial<Yields>): Yields {
-  return {
-    money: override?.money ?? base.money,
-    influence: override?.influence ?? base.influence,
-    ops: override?.ops ?? base.ops,
-    boost: override?.boost ?? base.boost,
-  };
-}
+export type YieldMultEffect = {
+  kind: "yield_mult";
+  money?: number;
+  influence?: number;
+  ops?: number;
+  boost?: number;
+};
 
-function multiplyYields(a: Yields, scalar: number): Yields {
-  return {
-    money: a.money * scalar,
-    influence: a.influence * scalar,
-    ops: a.ops * scalar,
-    boost: a.boost * scalar,
-  };
-}
+export type ModifierState = {
+  id: string;                       // catalog id
+  stage: EffectStage;               // defaulted by resolver (capacity/owner_share/post)
+  effect: YieldMultEffect;          // currently only yield_mult; extend later if needed
+  source: "trait" | "project" | "event" | "scenario" | "org";
+  appliesToFactionId?: string;      // used for owner_share scopes (orgs)
+  appliedOnTurn: number;            // when it became active
+  expiresOnTurn?: number;           // optional
+};
 
-function addYields(a: Yields, b: Yields): Yields {
-  return {
-    money: a.money + b.money,
-    influence: a.influence + b.influence,
-    ops: a.ops + b.ops,
-    boost: a.boost + b.boost,
-  };
-}
+// ———————————————————————————————————————————————————————————————————————
+// Compile & helpers
+// ———————————————————————————————————————————————————————————————————————
 
-function aggregateYieldMult(mods: ModifierState[]): Yields {
-  // Start at 1.0 multipliers; multiply any present component-wise
-  let m = { money: 1, influence: 1, ops: 1, boost: 1 } as Yields;
-  for (const mod of mods) {
-    if (mod.effect.kind === "yield_mult") {
-      m.money *= mod.effect.money ?? 1;
-      m.influence *= mod.effect.influence ?? 1;
-      m.ops *= mod.effect.ops ?? 1;
-      m.boost *= mod.effect.boost ?? 1;
-    }
+export type CompileOptions = {
+  turn?: number;
+  // Optional array of initial owners by CP index (length must equal CP count)
+  initialOwners?: (string | null)[];
+  // Optional function to resolve catalog ids → ModifierState (without id/appliedOnTurn)
+  resolveModifier?: (id: string) => Omit<ModifierState, "id" | "appliedOnTurn"> | null;
+};
+
+export function compileNation(author: NationAuthoring, opts: CompileOptions = {}): NationState {
+  const turn = opts.turn ?? 1;
+  const cpCount = CP_BY_TIER[author.tier];
+  if (!Number.isFinite(cpCount)) {
+    throw new Error(`Unknown tier '${author.tier}' for nation ${author.id}`);
   }
-  return m;
-}
-
-function applyYieldMultipliers(y: Yields, mults: Yields): Yields {
-  return {
-    money: y.money * mults.money,
-    influence: y.influence * mults.influence,
-    ops: y.ops * mults.ops,
-    boost: y.boost * mults.boost,
-  };
-}
-
-/************************
- * Compilation pipeline  *
- ************************/
-export function compileNation(
-  a: NationAuthoring,
-  turn: number = 1,
-  rules: RulesConfig = DEFAULT_RULES
-): NationState {
-  const cpCount = cpCountForTier(a.tier);
 
   // Build CP slots (last is executive)
   const cp: CPState[] = Array.from({ length: cpCount }, (_, i) => ({
     index: i,
     kind: i === cpCount - 1 ? "executive" : "regular",
-    owner: a.startOwners?.[i] ?? null,
+    owner: opts.initialOwners?.[i] ?? null,
   }));
 
-  // Executive starts locked (UI hint). Enforcement is via canAcquireExecutive().
-  const exec = cp[cp.length - 1];
-  exec.locked = { reason: `Requires majority (floor) of non-exec CPs and PO ≥ ${rules.execGate.poThreshold}.` };
-
-  // Normalize starting values
-  const prosperity = clamp(a.startProsperity ?? 3, 1, 5);
-  const unrest = clamp(a.startUnrest ?? 0, 0, 5);
+  // Normalize PO (clamp 0–100 & drop negatives/NaN)
   const po: Record<string, number> = {};
-  if (a.startPO) {
-    for (const [f, v] of Object.entries(a.startPO)) {
-      po[f] = clamp(Math.round(v), 0, 100);
-    }
+  const startPO = author.startPO ?? {};
+  for (const [factionId, raw] of Object.entries(startPO)) {
+    const v = clamp(Math.round(raw), 0, 100);
+    if (v > 0) po[factionId] = v;
   }
 
-  // Convert authoring modifiers → runtime modifiers
-  const modifiers: ModifierState[] = normalizeModifiers(a.modifiers ?? [], turn);
+  // Flags
+  const flags = new Set(author.startFlags ?? []);
 
-  // Flags → example: launch_capability
-  const launchCapability = modifiers.some(
-    (m) => m.effect.kind === "flag" && m.effect.name === "launch_capability" && (m.effect.value ?? true)
-  );
+  // Resolve modifiers (optional catalog injection)
+  const modifiers: ModifierState[] = [];
+  const ids = author.startModifiers ?? [];
+  for (const id of ids) {
+    const base = opts.resolveModifier?.(id);
+    if (!base) continue; // silently skip unknown ids; your resolver can throw instead
+    modifiers.push({
+      id,
+      appliedOnTurn: turn,
+      ...base,
+    });
+  }
 
-  // Yields: per-tier then apply per-nation overrides
-  const basePerCP = rules.perTierYield[a.tier];
-  const yieldPerCP = mergeYields(basePerCP, a.yieldOverridesPerCP);
+  const nation: NationState = {
+    id: author.id,
+    name: author.name,
+    tier: author.tier,
+    economyProfile: author.economyProfile,
 
-  // Multipliers: prosperity + yield_mult modifiers
-  const prosperityMult = rules.prosperityMultiplier(prosperity);
-  const yieldMults = aggregateYieldMult(modifiers);
-
-  // Total estimate: cp.length × perCP × prosperity × yieldMults
-  const perCPWithProsperity = multiplyYields(yieldPerCP, prosperityMult);
-  const perCPWithAllMults = applyYieldMultipliers(perCPWithProsperity, yieldMults);
-  const totalYieldEstimate = multiplyYields(perCPWithAllMults, cp.length);
-
-  return {
-    id: a.id,
-    name: a.name,
-    tier: a.tier,
     cp,
     po,
-    security: a.baseSecurity,
-    unrest,
-    prosperity,
-    launchCapability,
-    projects: {},
+    security: author.baseSecurity,
+    unrest: (author.startUnrest ?? 0) as 0 | 1 | 2 | 3 | 4 | 5,
+    prosperity: (author.startProsperity ?? 3) as 1 | 2 | 3 | 4 | 5,
+
+    flags,
     modifiers,
-    yieldPerCP,
-    prosperityMult,
-    totalYieldEstimate,
   };
+
+  // Invariants for sanity (throws in dev if violated)
+  assertNationInvariants(nation);
+
+  return nation;
 }
 
-export function canAcquireExecutive(nation: NationState, factionId: string): boolean {
-  const poOK = (nation.po[factionId] ?? 0) >= DEFAULT_RULES.execGate.poThreshold;
-  const nonExecOwned = nation.cp.filter((c) => c.kind === "regular" && c.owner === factionId).length;
-  const majorityNeeded = Math.floor(nation.cp.length / 2);
+/**
+ * Exec gate — computed policy (do not store).
+ * Requires: PO ≥ 60 AND majority (floor) of non-exec CPs.
+ */
+export function canAcquireExecutive(n: NationState, factionId: string): boolean {
+  const nonExecOwned = n.cp.filter(c => c.kind === "regular" && c.owner === factionId).length;
+  const majorityNeeded = Math.floor((n.cp.length - 1) / 2); // among regular CPs only
+  const poOK = (n.po[factionId] ?? 0) >= 60;
   return poOK && nonExecOwned >= majorityNeeded;
 }
 
-/*******************************
- * Modifiers: normalization     *
- *******************************/
-export function normalizeModifiers(authoring: ModifierAuthoring[], turn: number): ModifierState[] {
-  const out: ModifierState[] = [];
-  let autoId = 0;
-  for (const m of authoring) {
-    const id = `mod:${autoId++}`;
-    switch (m.kind) {
-      case "yield_mult":
-        out.push({ id, source: "scenario", effect: { kind: "yield_mult", ...m }, appliedOnTurn: turn });
-        break;
-      case "mission_dc_delta":
-        out.push({ id, source: "scenario", effect: { kind: "mission_dc_delta", mission: m.mission, delta: m.delta }, appliedOnTurn: turn });
-        break;
-      case "po_change":
-        out.push({ id, source: "scenario", effect: { kind: "po_change", target: m.target, amount: m.amount }, appliedOnTurn: turn });
-        break;
-      case "security_delta":
-        out.push({ id, source: "scenario", effect: { kind: "security_delta", amount: m.amount }, appliedOnTurn: turn });
-        break;
-      case "unrest_delta":
-        out.push({ id, source: "scenario", effect: { kind: "unrest_delta", amount: m.amount }, appliedOnTurn: turn });
-        break;
-      case "flag":
-        out.push({ id, source: "scenario", effect: { kind: "flag", name: m.name, value: true }, appliedOnTurn: turn });
-        break;
-    }
-  }
-  return out;
+/**
+ * Optional helper for UI: if the exec is locked for a faction, explain why.
+ * Returns null if no lock applies.
+ */
+export function executiveLockReason(n: NationState, factionId: string): string | null {
+  const po = n.po[factionId] ?? 0;
+  const nonExecOwned = n.cp.filter(c => c.kind === "regular" && c.owner === factionId).length;
+  const majorityNeeded = Math.floor((n.cp.length - 1) / 2);
+
+  const reasons: string[] = [];
+  if (po < 60) reasons.push(`PO ${po}/60`);
+  if (nonExecOwned < majorityNeeded) reasons.push(`need ${majorityNeeded} regular CPs (have ${nonExecOwned})`);
+  return reasons.length ? `Executive locked: ${reasons.join("; ")}` : null;
 }
 
-/*********************
- * Example usage      *
- *********************/
-export const EXAMPLE_AUTHORING: NationAuthoring = {
-  id: "JPN",
-  name: "Japan",
-  tier: "major",
-  baseSecurity: 6,
-  startProsperity: 4,
-  startUnrest: 1,
-  startPO: { Academy: 72, Servants: 18, Protectorate: 4 },
-  traits: ["industrial_base"],
-  yieldOverridesPerCP: { boost: 0.3 },
-  modifiers: [
-    { kind: "yield_mult", money: 1.05, boost: 1.1 },
-    { kind: "flag", name: "launch_capability" },
-  ],
-  startOwners: ["Academy", "Academy", null, null, null, null],
-};
+// ———————————————————————————————————————————————————————————————————————
+// Validation (lightweight guards for bad data during dev)
+// ———————————————————————————————————————————————————————————————————————
 
-// Compile on load (example)
-export const EXAMPLE_RUNTIME = compileNation(EXAMPLE_AUTHORING, 1, DEFAULT_RULES);
-
-// Exec gate check (example)
-export const EXAMPLE_CAN_TAKE_EXEC = canAcquireExecutive(EXAMPLE_RUNTIME, "Academy");
-
-/************************************************
- * Optional: Public Opinion bonus (derived only) *
- ************************************************/
-export function poBonus(po: number): number {
-  // Example formula: floor(PO/10) - 3
-  return Math.floor(po / 10) - 3;
-}
-
-/***************************************************
- * Optional: Basic authoring validator (lightweight) *
- ***************************************************/
-export function validateAuthoring(a: NationAuthoring): string[] {
-  const errs: string[] = [];
-  if (!a.id) errs.push("id is required");
-  if (!a.name) errs.push("name is required");
-  if (!CP_COUNT_BY_TIER[a.tier]) errs.push(`invalid tier: ${a.tier}`);
-  if (typeof a.baseSecurity !== "number") errs.push("baseSecurity must be a number");
-  if (a.startProsperity && (a.startProsperity < 1 || a.startProsperity > 5)) errs.push("startProsperity must be 1..5");
-  if (a.startUnrest && (a.startUnrest < 0 || a.startUnrest > 5)) errs.push("startUnrest must be 0..5");
-  if (a.startOwners) {
-    const cpCount = cpCountForTier(a.tier);
-    if (a.startOwners.length !== cpCount) errs.push(`startOwners length must be ${cpCount}`);
-  }
-  return errs;
-}
+export function assertNationInvariants(n: NationState): void {
+  const expectedCPs = CP_BY_TIER[n.tier];
+  if (n.cp.length !== expectedCPs) {
+    throw new Error(`[${n.id}] cp.length=${n.cp.length} but tier
