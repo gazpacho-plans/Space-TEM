@@ -1,3 +1,6 @@
+# Secrets
+token.env
+
 # Node / TypeScript
 node_modules/
 dist/
