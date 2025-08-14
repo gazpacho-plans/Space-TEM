@@ -1,71 +1,47 @@
 # Space-TEM Discord Bot
 
-This Discord bot implements the character creation system for the Space-TEM game.
+This Discord bot implements the character creation system for the Space-TEM game and persists created Councillors to SQLite.
 
-## Setup Instructions
+## Setup
 
-### 1. Install Python
-
-First, make sure you have Python 3.8 or higher installed:
+### 1) Install Python 3.10+
 
 1. Download Python from [python.org](https://python.org)
-2. During installation, make sure to check "Add Python to PATH"
-3. Verify installation by running: `python --version`
+2. During installation, check "Add Python to PATH"
+3. Verify: `python --version` (must be 3.10+)
 
-### 2. Install Dependencies
+### 2) Install dependencies
 
-**Windows:**
-```bash
-# Run the setup script
-setup.bat
-
-# Or manually:
-pip install -r requirements.txt
-```
-
-**macOS/Linux:**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Create Discord Bot
+### 3) Create a Discord bot and get the token
 
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to the "Bot" section
-4. Click "Add Bot"
-5. Copy the bot token
+1. Open the Discord Developer Portal (`https://discord.com/developers/applications`)
+2. Create a New Application → Bot → Add Bot
+3. Copy the token
 
-### 3. Set Environment Variables
+### 4) Configure environment variables
 
-Create a `.env` file in the project root:
+Create `token.env` in the project root:
 
 ```env
 DISCORD_TOKEN=your_discord_bot_token_here
+# Optional: sync commands to a single guild for faster iteration
+DISCORD_GUILD_ID=your_guild_id_here
+# Optional: clear global commands after guild sync (1/true to enable)
+CLEAR_GLOBAL_COMMANDS=1
 ```
 
-### 4. Invite Bot to Server
+### 5) Invite the bot to your server
 
-1. In the Discord Developer Portal, go to "OAuth2" > "URL Generator"
-2. Select "bot" under scopes
-3. Select the following permissions:
-   - Send Messages
-   - Use Slash Commands
-   - Embed Links
-   - Read Message History
-4. Copy the generated URL and open it in a browser to invite the bot
+1. In the Developer Portal, OAuth2 → URL Generator
+2. Scopes: `bot`, `applications.commands`
+3. Bot Permissions (minimum): Send Messages, Embed Links, Read Message History
+4. Open the generated URL to invite the bot
 
-### 5. Test the Setup
-
-Before running the bot, test that everything is working:
-
-```bash
-python test_data_loading.py
-```
-
-This will verify that all game data can be loaded correctly.
-
-### 6. Run the Bot
+### 6) Run
 
 ```bash
 python bot.py
@@ -73,46 +49,59 @@ python bot.py
 
 ## Commands
 
-### `/create_councillor [name]`
-Starts the character creation process. The bot will guide you through:
-1. **Faction Selection**: Choose from The Academy, Humanity First, The Protectorate, or The Initiative
-2. **Profession Selection**: Choose from 22 different professions with unique attributes and missions
-3. **Confirmation**: Review your choices and create the character
+- **User commands**
+  - `/create_councillor name:<text>`: Start guided character creation
+  - `/cancel_creation`: Cancel your in-progress creation
+  - `/my_councillor`: Show your most recently saved Councillor
 
-### `/cancel_creation`
-Cancels your active character creation process.
+- **Admin commands** (require Manage Server/Guild permission)
+  - `/list [user] [limit]`: List saved Councillors (optionally filter by `user`, default `limit` up to 50)
+  - `/delete_councillor character_id:<number>`: Delete a Councillor by ID
 
 ## Character Creation Flow
 
-The character creation process follows the specification from `docs/character_creation.md`:
-
-1. **Name Validation**: Character names must be 2-50 characters
-2. **Faction Selection**: Interactive dropdown with faction descriptions
-3. **Profession Selection**: Interactive dropdown showing profession details and available missions
-4. **Attribute Generation**: Random attributes within profession ranges
-5. **Trait Assignment**: One free positive trait + 20% chance for additional negative/mixed trait
-6. **Income Calculation**: Based on attributes and traits
-7. **Character Sheet**: Final display with all character information
+1. Name validation (2–50 chars)
+2. Faction selection (interactive menu with descriptions)
+3. Profession selection (6 core professions with attribute ranges and missions)
+4. Attribute generation (random within profession ranges)
+5. Trait assignment (one free positive trait; 20% chance of an extra negative/mixed trait)
+6. Income calculation (based on attributes and trait effects)
+7. Final character sheet embed and persistence to the database
 
 ## Features
 
-- **Interactive UI**: Uses Discord's select menus and buttons
-- **Timeout Handling**: 60-second timeout for each step
-- **State Management**: Tracks active character creations per user
-- **Data Integration**: Loads game data from JSON files
-- **Error Handling**: Graceful error handling and user feedback
+- Interactive UI with select menus and buttons (ephemeral to the user)
+- Timeouts: 5 minutes on selection steps, 60 seconds on confirmation, background 5-minute inactivity cleanup
+- Per-user state tracking; safe cleanup on completion/cancel/timeout
+- SQLite persistence at `data/characters.db`
+- JSON-backed game data loaded at startup from `data/`
+- Admin moderation tools to list and delete saved characters
+
+## Architecture
+
+- `bot.py` loads extensions and manages slash command sync (supports guild-scoped sync via `DISCORD_GUILD_ID` and optional clearing of globals via `CLEAR_GLOBAL_COMMANDS`).
+- `cogs/character_creation.py` exposes `/create_councillor`, `/cancel_creation`, `/my_councillor`, implements UI and generation logic.
+- `cogs/admin.py` exposes `/list` and `/delete_councillor` for server admins.
+- `storage/character_repo.py` provides async SQLite persistence using a thread pool.
+- Game data is loaded once at import into module-level `GAME_DATA` for static UI options.
 
 ## File Structure
 
-- `bot.py`: Main bot file with all Discord integration
-- `data/`: Game data files (factions, professions, traits)
-- `requirements.txt`: Python dependencies
-- `BOT_README.md`: This file
+- `bot.py`: Main bot entrypoint
+- `cogs/`: Bot extensions
+  - `__init__.py`
+  - `character_creation.py`
+  - `admin.py`
+- `storage/`
+  - `character_repo.py`
+- `data/`: Factions, professions, and trait JSON; SQLite DB lives here as `characters.db`
+- `docs/`: Additional game design documentation
+- `requirements.txt`
+- `BOT_README.md`
 
 ## Development Notes
 
-- The bot uses Discord.py 2.3.0+ for slash commands
-- Character creation is ephemeral (only visible to the user)
-- All game data is loaded from JSON files at startup
-- The bot supports multiple concurrent character creations
-- Timeout tasks are properly cleaned up to prevent memory leaks
+- Python 3.10+ (uses modern union types like `int | None`)
+- discord.py 2.3.0+ with `app_commands` for slash commands
+- Interactions are ephemeral to the user
+- Do not commit real tokens. Keep `token.env` out of version control

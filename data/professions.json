@@ -45,7 +45,7 @@
     "Security": [2, 4],
     "XP_Cost": 20,
     "description": "A political leader excelling in diplomacy and governance.",
-    "missions": ["Public Campaign", "Control Nation", "Purchase Org", "Stabilize Nation", "Coup Nation"]
+    "missions": ["Public Campaign", "Control Nation", "Stabilize Nation", "Coup Nation"]
   },
   "Celebrity": {
     "Persuasion": [6, 8],
@@ -93,7 +93,7 @@
     "Security": [2, 4],
     "XP_Cost": 0,
     "description": "A corporate leader, managing resources and operations efficiently.",
-    "missions": ["Hostile Takeover", "Purchase Org", "Manage Project"]
+    "missions": ["Hostile Takeover", "Manage Project"]
   },
   "Test Pilot": {
     "Persuasion": [1, 5],
@@ -141,7 +141,7 @@
     "Security": [1, 5],
     "XP_Cost": 20,
     "description": "A wealthy magnate, mastering organizational control and resources.",
-    "missions": ["Hostile Takeover", "Purchase Org"]
+    "missions": ["Hostile Takeover"]
   },
   "Agency Director": {
     "Persuasion": [2, 4],
@@ -213,7 +213,7 @@
     "Security": [3, 5],
     "XP_Cost": 0,
     "description": "A skilled negotiator, fostering alliances and acquiring influence.",
-    "missions": ["Public Campaign", "Purchase Org", "Stabilize Nation"]
+    "missions": ["Public Campaign", "Stabilize Nation"]
   },
   "Judge": {
     "Persuasion": [3, 7],

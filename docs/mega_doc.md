@@ -90,7 +90,7 @@ The game proceeds in weekly turns, each divided into two distinct phases to allo
 
 ## **7\. Organizations (Orgs)**
 
-Orgs are powerful non-player entities that can be acquired and controlled by individual Councillors. They provide passive resource bonuses and can even unlock mission access for Councillors who wouldn't normally have it. Orgs can be acquired in two ways: through a clandestine **Hostile Takeover** mission, or by establishing a political foothold in an Org's home nation and using a **Purchase Org** mission. Orgs can be transferred between Councillors within the same faction for a small administrative cost. The number of Orgs a Councillor can control is limited by their **🏢 Administration** attribute.
+Orgs are powerful non-player entities that can be acquired and controlled by individual Councillors. They provide passive resource bonuses and can even unlock mission access for Councillors who wouldn't normally have it. Orgs can be acquired in two ways: through a clandestine **Hostile Takeover** mission, or by establishing a political foothold in an Org's home nation and using a **Purchase Org** command. Orgs can be transferred between Councillors within the same faction for a small administrative cost. The number of Orgs a Councillor can control is limited by their **🏢 Administration** attribute.
 
 ## **8\. The Space Game: Habitats (Habs)**
 
@@ -105,77 +105,7 @@ Beyond the shadow war on Earth lies the next frontier: space. Factions can desig
 *(This section contains the technical details required for bot development.)*
 
 ### **9.1. Data Structures**
-
-* **Councillor Object:**  
-
- ``` 
-{  
-    "discord\_id": "user\_id",  
-    "character\_name": "string",  
-    "faction": "string",  
-    "profession": "string",  
-    "xp": "integer",  
-    "attributes": {  
-      "persuasion": "integer",  
-      "investigation": "integer",  
-      "espionage": "integer",  
-      "command": "integer",  
-      "security": "integer",  
-      "science": "integer",  
-      "administration": "integer"  
-    },  
-    "traits": \["trait1", "trait2"\],  
-    "location": "Earth | hab\_id",  
-    "controlled\_orgs": \["org\_id\_1", "org\_id\_2"\]  
-  }
-```
-
-* **Hab Object:**  
-
-```
-  {  
-    "hab\_id": "string",  
-    "owner\_faction": "string",  
-    "location": "Low Earth Orbit | Lunar Orbit | Mars Surface",  
-    "modules": \["module\_id\_1", "module\_id\_2"\]  
-  }
-```
-
-* **Nation Object:**  
-
-```
-  {  
-    "nation\_name": "string",  
-    "total\_cp": "integer",  
-    "control\_points": \[  
-      {"faction": "faction\_name", "count": "integer"}  
-    \],  
-    "public\_opinion": \[  
-      {"faction": "faction\_name", "opinion\_score": "integer"}  
-    \]  
-  }
-```
-
-* **Org Object:**  
-
-```
-  {  
-    "org\_id": "string",  
-    "org\_name": "string",  
-    "nation": "string",  
-    "purchase\_cost\_money": "integer",  
-    "purchase\_cost\_influence": "integer",  
-    "resource\_bonus": {  
-      "money": "integer",  
-      "influence": "integer",  
-      "operations": "integer",  
-      "research": "integer",  
-      "boost": "integer"  
-    },  
-    "difficulty": "integer",  
-    "grants\_mission": "string"  
-  }
-```
+WIP
 
 ### **9.2. Mission Resolution Logic**
 
@@ -317,17 +247,6 @@ The weekly turn is resolved in a strict sequence to allow for intelligence and r
   * **Success:** A portion of 🔬 Research is stolen from the target's project and added to your own active project. The attacker is revealed.  
   * **Failure:** The attempt is thwarted. The attacker is revealed.  
   * **Critical Failure:** The attempt is thwarted, and the attacking Councillor gains the Marked negative trait.
-
-#### **9.2.12. Mission: Purchase Org**
-
-* **Goal:** To acquire an unowned Org through economic and political influence.  
-* **Type:** Committed Mission (Phase 1\)  
-* **Mechanic:** No roll required. Automatically succeeds if prerequisites are met.  
-* **Prerequisites:**  
-  1. The target Org must be unowned.  
-  2. The acting Councillor's faction must control at least one CP in the Org's home nation.  
-  3. The faction must have enough 💰 Money and ✨ Influence to pay the purchase cost.  
-* **Effect:** The resources are deducted from the faction's treasury, and the acting Councillor gains control of the Org.
 
 #### **9.2.13. Mission: Launch Hab**
 
@@ -596,7 +515,6 @@ Traits are passive modifiers that affect a Councillor's abilities. They can be p
 | **Investigate Alien Activity** | Scientist, Professor, Test Pilot | Contributes to global, high-risk research. |
 | **Sabotage Project** | Operative, Rebel, Scientist | Disrupts an enemy faction's research. |
 | **Steal Project** | Hacker, Spy, Tech Mogul | Steals research from a rival faction. |
-| **Purchase Org** | Diplomat, Executive, Governor, Tycoon | Requires political and economic savvy. |
 | **Launch Hab** | Scientist, Executive, Test Pilot, Agency Director | Requires high-tech and administrative skills. |
 | **Go to Orbit** | Any | Any Councillor can travel to a hab. |
 | Execute Transfer | Captain, Test Pilot, Scientist, Agency Director | Required to pilot spacecraft on complex trajectories. |
