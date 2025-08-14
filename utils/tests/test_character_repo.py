@@ -16,7 +16,7 @@ async def test_character_repo_create_read_delete():
 
     repo = CharacterRepository(db_path=str(db_path))
 
-    # Create two characters for the same user
+    # Create two characters with different users
     ch1 = {
         "user_id": 1111,
         "name": "Alpha",
@@ -30,7 +30,7 @@ async def test_character_repo_create_read_delete():
         "controlled_orgs": [],
     }
     ch2 = {
-        "user_id": 1111,
+        "user_id": 2222,
         "name": "Beta",
         "faction": "Faction B",
         "profession": "Hacker",
@@ -47,33 +47,37 @@ async def test_character_repo_create_read_delete():
     assert isinstance(ch1_id, int) and isinstance(ch2_id, int)
     assert ch2_id > ch1_id
 
-    # Read latest by user
-    latest = await repo.get_character_by_user(1111)
-    assert latest is not None
-    assert latest["id"] == ch2_id
-    assert latest["name"] == "Beta"
+    # Read by user
+    u1 = await repo.get_character_by_user(1111)
+    u2 = await repo.get_character_by_user(2222)
+    assert u1 is not None and u1["id"] == ch1_id
+    assert u2 is not None and u2["id"] == ch2_id
 
     # List by user
-    chars = await repo.list_characters_by_user(1111)
-    assert len(chars) == 2
-    assert {c["id"] for c in chars} == {ch1_id, ch2_id}
+    chars1 = await repo.list_characters_by_user(1111)
+    chars2 = await repo.list_characters_by_user(2222)
+    assert len(chars1) == 1 and chars1[0]["id"] == ch1_id
+    assert len(chars2) == 1 and chars2[0]["id"] == ch2_id
 
-    # Delete the latest using the user+id path
-    ok = await repo.delete_character(1111, ch2_id)
+    # Delete user 2222's character using the user+id path
+    ok = await repo.delete_character(2222, ch2_id)
     assert ok is True
-    remaining = await repo.get_character_by_user(1111)
-    assert remaining is not None
-    assert remaining["id"] == ch1_id
+    # After deleting user 2222's character, user 1111's character remains
+    remaining1 = await repo.get_character_by_user(1111)
+    assert remaining1 is not None and remaining1["id"] == ch1_id
 
     # Delete the remaining using the by-id path
     ok2 = await repo.delete_character_by_id(ch1_id)
     assert ok2 is True
 
-    # Confirm nothing remains for the user
-    none = await repo.get_character_by_user(1111)
-    assert none is None
-    empty = await repo.list_characters_by_user(1111)
-    assert empty == []
+    # Confirm nothing remains for both users
+    none1 = await repo.get_character_by_user(1111)
+    assert none1 is None
+    none2 = await repo.get_character_by_user(2222)
+    assert none2 is None
+    empty1 = await repo.list_characters_by_user(1111)
+    empty2 = await repo.list_characters_by_user(2222)
+    assert empty1 == [] and empty2 == []
 
     await repo.aclose()
 
@@ -83,7 +87,7 @@ async def test_character_repo_create_read_delete():
 
 
 @pytest.mark.asyncio
-async def test_unique_name_per_user():
+async def test_unique_constraints_one_per_user_and_global_name():
     db_path = Path("data/db/test_unique.db")
     if db_path.exists():
         db_path.unlink()
@@ -110,13 +114,13 @@ async def test_unique_name_per_user():
     id1 = await repo.save_character(c1)
     assert isinstance(id1, int)
 
+    # Same user attempting a second character should fail
     with pytest.raises(ValueError):
         await repo.save_character(c2_same_user_dup)
 
-    # Different user with same name should be allowed
-    id3 = await repo.save_character(c3_other_user_same_name)
-    assert isinstance(id3, int)
-    assert id3 != id1
+    # Different user with the same name should also fail (global name uniqueness)
+    with pytest.raises(ValueError):
+        await repo.save_character(c3_other_user_same_name)
 
     await repo.aclose()
 

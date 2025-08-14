@@ -5,6 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 from utils.logging import setup_logging, get_logger, ctx_from_interaction
+from storage.migrations import run_migrations
 
 
 load_dotenv('token.env')
@@ -55,6 +56,8 @@ async def load_extensions():
 
 
 async def main():
+    # Ensure database schema is up-to-date before loading any cogs
+    await run_migrations()
     await load_extensions()
     token = os.getenv('DISCORD_TOKEN')
     if not token:

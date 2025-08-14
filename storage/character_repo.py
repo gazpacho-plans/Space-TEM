@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 import asyncio
 import aiosqlite
+from storage.migrations import run_migrations
 
 
 class CharacterRepository:
@@ -20,43 +21,14 @@ class CharacterRepository:
             if self._initialized and self._conn is not None:
                 return
             Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            # Ensure schema is ready (idempotent)
+            await run_migrations(self.db_path)
             conn = await aiosqlite.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
             # Improve concurrency characteristics
             await conn.execute("PRAGMA journal_mode=WAL;")
             await conn.execute("PRAGMA busy_timeout=5000;")
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS characters (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    faction TEXT NOT NULL,
-                    profession TEXT NOT NULL,
-                    attributes TEXT NOT NULL,
-                    traits TEXT NOT NULL,
-                    income TEXT NOT NULL,
-                    xp INTEGER NOT NULL,
-                    location TEXT NOT NULL,
-                    controlled_orgs TEXT NOT NULL
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_characters_user_id ON characters(user_id);
-                """
-            )
-            # Enforce per-user unique character names
-            try:
-                await conn.execute(
-                    """
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_characters_user_name
-                    ON characters(user_id, name);
-                    """
-                )
-            except Exception:
-                # If duplicates already exist, index creation will fail; continue startup.
-                pass
+            # Tables and schema are managed by the migration layer.
             await conn.commit()
             self._conn = conn
             self._initialized = True
@@ -94,6 +66,21 @@ class CharacterRepository:
         }
 
     def _deserialize(self, row: sqlite3.Row | tuple) -> Dict[str, Any]:
+        if isinstance(row, sqlite3.Row):
+            return {
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "name": row["name"],
+                "faction": row["faction"],
+                "profession": row["profession"],
+                "attributes": json.loads(row["attributes"]) if row["attributes"] else {},
+                "traits": json.loads(row["traits"]) if row["traits"] else [],
+                "income": json.loads(row["income"]) if row["income"] else {},
+                "xp": row["xp"],
+                "location": row["location"],
+                "controlled_orgs": json.loads(row["controlled_orgs"]) if row["controlled_orgs"] else [],
+            }
+        # Fallback for tuple rows
         return {
             "id": row[0],
             "user_id": row[1],
@@ -112,6 +99,24 @@ class CharacterRepository:
         await self._ensure_initialized()
         assert self._conn is not None
         data = self._serialize(character)
+        # Application-level checks to provide clear errors even if DB indexes are missing
+        # Enforce: at most one character per user
+        async with self._conn.execute(
+            "SELECT id FROM characters WHERE user_id = ? LIMIT 1",
+            (data["user_id"],),
+        ) as cur:
+            exists_user = await cur.fetchone()
+            if exists_user is not None:
+                raise ValueError("This user already has a saved character.")
+
+        # Enforce: global uniqueness of character names
+        async with self._conn.execute(
+            "SELECT id FROM characters WHERE name = ? LIMIT 1",
+            (data["name"],),
+        ) as cur:
+            exists_name = await cur.fetchone()
+            if exists_name is not None:
+                raise ValueError("A character with this name already exists.")
         try:
             cur = await self._conn.execute(
                 """
@@ -128,8 +133,13 @@ class CharacterRepository:
             await self._conn.commit()
             return cur.lastrowid  # type: ignore[return-value]
         except aiosqlite.IntegrityError as exc:
-            # Likely uniqueness on (user_id, name)
-            raise ValueError("A character with this name already exists for this user.") from exc
+            msg = str(exc)
+            if "characters.user_id" in msg:
+                raise ValueError("This user already has a saved character.") from exc
+            if "characters.name" in msg:
+                raise ValueError("A character with this name already exists.") from exc
+            # Fallback
+            raise ValueError("Failed to save character due to a uniqueness constraint.") from exc
 
     async def get_character_by_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         await self._ensure_initialized()
