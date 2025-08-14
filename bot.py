@@ -131,10 +131,10 @@ async def create_councillor(interaction: discord.Interaction, name: str):
     
     # Create faction selection view
     view = FactionSelectionView(creation_state)
-    
+
     # Send the initial message
-    response = await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-    creation_state.message = response
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    creation_state.message = await interaction.original_response()
     
     # Set up timeout
     creation_state.timeout_task = asyncio.create_task(creation_timeout(user_id))
