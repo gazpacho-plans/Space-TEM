@@ -73,8 +73,8 @@ python bot.py
 - Interactive UI with select menus and buttons (ephemeral to the user)
 - Timeouts: 5 minutes on selection steps, 60 seconds on confirmation, background 5-minute inactivity cleanup
 - Per-user state tracking; safe cleanup on completion/cancel/timeout
-- SQLite persistence at `data/characters.db`
-- JSON-backed game data loaded at startup from `data/`
+- SQLite persistence at `data/db/characters.db`
+- JSON-backed game data loaded at startup from `data/static/`
 - Admin moderation tools to list and delete saved characters
 
 ## Architecture
@@ -94,7 +94,7 @@ python bot.py
   - `admin.py`
 - `storage/`
   - `character_repo.py`
-- `data/`: Factions, professions, and trait JSON; SQLite DB lives here as `characters.db`
+- `data/`: Static JSON under `data/static/`; SQLite DB under `data/db/characters.db`
 - `docs/`: Additional game design documentation
 - `requirements.txt`
 - `BOT_README.md`

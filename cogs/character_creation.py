@@ -13,19 +13,19 @@ from storage.character_repo import CharacterRepository
 def load_game_data() -> Dict[str, Any]:
     data: Dict[str, Any] = {}
 
-    with open('data/factions.json', 'r') as f:
+    with open('data/static/factions.json', 'r') as f:
         data['factions'] = json.load(f)
 
-    with open('data/professions.json', 'r') as f:
+    with open('data/static/professions.json', 'r') as f:
         data['professions'] = json.load(f)
 
-    with open('data/positive_traits.json', 'r') as f:
+    with open('data/static/positive_traits.json', 'r') as f:
         data['positive_traits'] = json.load(f)
 
-    with open('data/negative_traits.json', 'r') as f:
+    with open('data/static/negative_traits.json', 'r') as f:
         data['negative_traits'] = json.load(f)
 
-    with open('data/mixed_traits.json', 'r') as f:
+    with open('data/static/mixed_traits.json', 'r') as f:
         data['mixed_traits'] = json.load(f)
 
     return data

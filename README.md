@@ -31,8 +31,8 @@ CLEAR_GLOBAL_COMMANDS=1
 
 ## Data & Persistence
 
-- Game data lives in `data/` as JSON: `factions.json`, `professions.json`, `positive_traits.json`, `negative_traits.json`, `mixed_traits.json`
-- Characters are saved to `data/characters.db` via `storage/character_repo.py`
+- Game data lives in `data/static/` as JSON: `factions.json`, `professions.json`, `positive_traits.json`, `negative_traits.json`, `mixed_traits.json`
+- Characters are saved to `data/db/characters.db` via `storage/character_repo.py`
 
 ## Architecture
 
@@ -51,12 +51,14 @@ CLEAR_GLOBAL_COMMANDS=1
 - `storage/`
   - `character_repo.py`
 - `data/`
-  - `factions.json`
-  - `professions.json`
-  - `positive_traits.json`
-  - `negative_traits.json`
-  - `mixed_traits.json`
-  - `characters.db` (created on first run)
+  - `static/`
+    - `factions.json`
+    - `professions.json`
+    - `positive_traits.json`
+    - `negative_traits.json`
+    - `mixed_traits.json`
+  - `db/`
+    - `characters.db` (created on first run)
 - `docs/`
   - `character_creation.md`
   - `mega_doc.md`

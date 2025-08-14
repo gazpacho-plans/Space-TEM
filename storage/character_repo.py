@@ -7,7 +7,7 @@ import asyncio
 
 
 class CharacterRepository:
-    def __init__(self, db_path: str = "data/characters.db"):
+    def __init__(self, db_path: str = "data/db/characters.db"):
         self.db_path = db_path
         self._executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
         self._ensure_db()
