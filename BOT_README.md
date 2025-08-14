@@ -2,70 +2,8 @@
 
 This Discord bot implements the character creation system for the Space-TEM game.
 
-## Setup Instructions
 
-### 1. Install Python
-
-First, make sure you have Python 3.8 or higher installed:
-
-1. Download Python from [python.org](https://python.org)
-2. During installation, make sure to check "Add Python to PATH"
-3. Verify installation by running: `python --version`
-
-### 2. Install Dependencies
-
-**Windows:**
-```bash
-# Run the setup script
-setup.bat
-
-# Or manually:
-pip install -r requirements.txt
-```
-
-**macOS/Linux:**
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Create Discord Bot
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to the "Bot" section
-4. Click "Add Bot"
-5. Copy the bot token
-
-### 3. Set Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-DISCORD_TOKEN=your_discord_bot_token_here
-```
-
-### 4. Invite Bot to Server
-
-1. In the Discord Developer Portal, go to "OAuth2" > "URL Generator"
-2. Select "bot" under scopes
-3. Select the following permissions:
-   - Send Messages
-   - Use Slash Commands
-   - Embed Links
-   - Read Message History
-4. Copy the generated URL and open it in a browser to invite the bot
-
-### 5. Test the Setup
-
-Before running the bot, test that everything is working:
-
-```bash
-python test_data_loading.py
-```
-
-This will verify that all game data can be loaded correctly.
-
-### 6. Run the Bot
+## Run the Bot
 
 ```bash
 python bot.py
