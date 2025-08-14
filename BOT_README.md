@@ -2,50 +2,11 @@
 
 This Discord bot implements the character creation system for the Space-TEM game and persists created Councillors to SQLite.
 
+For overall project overview and Quickstart, see [README.md](README.md). This document focuses on bot behavior and internals.
+
 ## Setup
 
-### 1) Install Python 3.10+
-
-1. Download Python from [python.org](https://python.org)
-2. During installation, check "Add Python to PATH"
-3. Verify: `python --version` (must be 3.10+)
-
-### 2) Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3) Create a Discord bot and get the token
-
-1. Open the Discord Developer Portal (`https://discord.com/developers/applications`)
-2. Create a New Application → Bot → Add Bot
-3. Copy the token
-
-### 4) Configure environment variables
-
-Create `token.env` in the project root:
-
-```env
-DISCORD_TOKEN=your_discord_bot_token_here
-# Optional: sync commands to a single guild for faster iteration
-DISCORD_GUILD_ID=your_guild_id_here
-# Optional: clear global commands after guild sync (1/true to enable)
-CLEAR_GLOBAL_COMMANDS=1
-```
-
-### 5) Invite the bot to your server
-
-1. In the Developer Portal, OAuth2 → URL Generator
-2. Scopes: `bot`, `applications.commands`
-3. Bot Permissions (minimum): Send Messages, Embed Links, Read Message History
-4. Open the generated URL to invite the bot
-
-### 6) Run
-
-```bash
-python bot.py
-```
+See the Quickstart in [README.md](README.md) for installation, environment configuration, inviting the bot, and running it. This document intentionally avoids duplicating those steps.
 
 ## Commands
 
@@ -85,19 +46,7 @@ python bot.py
 - `storage/character_repo.py` provides async SQLite persistence using a thread pool.
 - Game data is loaded once at import into module-level `GAME_DATA` for static UI options.
 
-## File Structure
-
-- `bot.py`: Main bot entrypoint
-- `cogs/`: Bot extensions
-  - `__init__.py`
-  - `character_creation.py`
-  - `admin.py`
-- `storage/`
-  - `character_repo.py`
-- `data/`: Static JSON under `data/static/`; SQLite DB under `data/db/characters.db`
-- `docs/`: Additional game design documentation
-- `requirements.txt`
-- `BOT_README.md`
+ 
 
 ## Development Notes
 

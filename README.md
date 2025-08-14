@@ -1,6 +1,6 @@
 # Space-TEM
 
-Space-TEM is a Discord-driven prototype for character creation and persistence in a space strategy setting. It includes a Discord bot with interactive UI for creating Councillors and saving them to SQLite.
+
 
 ## Quickstart
 
@@ -20,14 +20,9 @@ CLEAR_GLOBAL_COMMANDS=1
 5. Invite the bot (scopes: `bot`, `applications.commands`; perms: Send Messages, Embed Links, Read Message History)
 6. Run: `python bot.py`
 
-## Commands
+## Bot usage
 
-- `/create_councillor name:<text>`: Start guided character creation
-- `/cancel_creation`: Cancel your in-progress creation
-- `/my_councillor`: Show your most recently saved Councillor
-- Admin-only:
-  - `/list [user] [limit]`: List saved Councillors (optionally filter by user)
-  - `/delete_councillor character_id:<number>`: Delete a Councillor by ID
+- For full bot setup, commands, character flow, and features, see [BOT_README.md](BOT_README.md).
 
 ## Data & Persistence
 
@@ -51,14 +46,14 @@ CLEAR_GLOBAL_COMMANDS=1
 - `storage/`
   - `character_repo.py`
 - `data/`
+  - `db/`
+    - `characters.db` (created on first run)
   - `static/`
     - `factions.json`
     - `professions.json`
     - `positive_traits.json`
     - `negative_traits.json`
     - `mixed_traits.json`
-  - `db/`
-    - `characters.db` (created on first run)
 - `docs/`
   - `character_creation.md`
   - `mega_doc.md`
@@ -66,3 +61,8 @@ CLEAR_GLOBAL_COMMANDS=1
   - `nations_and_control_points.md`
 - `requirements.txt`
 - `BOT_README.md`
+
+## Further Reading
+
+- Detailed bot guide: [BOT_README.md](BOT_README.md)
+- Game design docs: [docs/](docs/)

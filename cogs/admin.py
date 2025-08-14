@@ -4,18 +4,21 @@ from discord.ext import commands
 from typing import Optional
 
 from storage.character_repo import CharacterRepository
+from utils.logging import get_logger, ctx_from_interaction, with_command_logging
 
 
 class Admin(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.repo = CharacterRepository()
+        self.logger = get_logger(__name__)
 
     def cog_unload(self) -> None:
         self.repo.close()
 
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="list", description="Admin: List saved Councillors (optionally filter by user)")
+    @with_command_logging
     async def list_councillors(self, interaction: discord.Interaction, user: Optional[discord.User] = None, limit: Optional[int] = 20):
         try:
             if user is not None:
@@ -24,6 +27,7 @@ class Admin(commands.Cog):
                 safe_limit = 1 if (limit is None or limit <= 0) else min(limit, 50)
                 characters = await self.repo.list_all_characters(limit=safe_limit)
         except Exception as exc:
+            self.logger.exception("Failed to list characters", extra={"ctx": ctx_from_interaction(interaction)})
             await interaction.response.send_message(f"Failed to list characters: {exc}", ephemeral=True)
             return
 
@@ -44,10 +48,12 @@ class Admin(commands.Cog):
 
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.command(name="delete_councillor", description="Admin: Delete a Councillor by ID")
+    @with_command_logging
     async def delete_councillor(self, interaction: discord.Interaction, character_id: int):
         try:
             ok = await self.repo.delete_character_by_id(character_id)
         except Exception as exc:
+            self.logger.exception("Failed to delete character", extra={"ctx": ctx_from_interaction(interaction)})
             await interaction.response.send_message(f"Failed to delete character: {exc}", ephemeral=True)
             return
 

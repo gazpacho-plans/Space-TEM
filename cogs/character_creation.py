@@ -5,6 +5,7 @@ import json
 import asyncio
 from typing import Optional, Dict, Any
 from storage.character_repo import CharacterRepository
+from utils.logging import get_logger, ctx_from_interaction, with_command_logging
 
 
 # -----------------------------
@@ -305,6 +306,7 @@ class FactionSelectionView(discord.ui.View):
             view = ProfessionSelectionView(self.cog, self.creation_state)
             await interaction.response.edit_message(embed=embed, view=view)
         except Exception as exc:
+            self.cog.logger.exception("Error handling faction selection", extra={"ctx": ctx_from_interaction(interaction)})
             await interaction.response.send_message(f"Error handling selection: {exc}", ephemeral=True)
 
 
@@ -336,6 +338,7 @@ class ProfessionSelectionView(discord.ui.View):
             view = ConfirmationView(self.cog, self.creation_state)
             await interaction.response.edit_message(embed=embed, view=view)
         except Exception as exc:
+            self.cog.logger.exception("Error handling profession selection", extra={"ctx": ctx_from_interaction(interaction)})
             await interaction.response.send_message(f"Error handling selection: {exc}", ephemeral=True)
 
 
@@ -360,7 +363,13 @@ class ConfirmationView(discord.ui.View):
             embed.set_footer(text=f"Character creation complete! Saved as ID {character_id}")
             cleanup_creation_state(self.cog, self.creation_state.user_id)
             await interaction.response.edit_message(embed=embed, view=None)
+        except ValueError as exc:
+            # Surface uniqueness violations with a clear message
+            self.cog.logger.info("duplicate_character_name", extra={"ctx": ctx_from_interaction(interaction)})
+            cleanup_creation_state(self.cog, self.creation_state.user_id)
+            await interaction.response.edit_message(content=str(exc), embed=None, view=None)
         except Exception as exc:
+            self.cog.logger.exception("Failed to save character", extra={"ctx": ctx_from_interaction(interaction)})
             cleanup_creation_state(self.cog, self.creation_state.user_id)
             await interaction.response.edit_message(content=f"Failed to save character: {exc}", embed=None, view=None)
 
@@ -409,12 +418,14 @@ class CharacterCreation(commands.Cog):
         self.bot = bot
         self.active_creations: Dict[int, CharacterCreationState] = {}
         self.repo = CharacterRepository()
+        self.logger = get_logger(__name__)
 
     def cog_unload(self) -> None:
         # Best-effort cleanup of background executor
         self.repo.close()
 
     @app_commands.command(name="create_councillor", description="Create a new Councillor character")
+    @with_command_logging
     async def create_councillor(self, interaction: discord.Interaction, name: str):
         user_id = interaction.user.id
 
@@ -447,6 +458,7 @@ class CharacterCreation(commands.Cog):
         creation_state.timeout_task = asyncio.create_task(creation_timeout(self, user_id))
 
     @app_commands.command(name="cancel_creation", description="Cancel your active character creation")
+    @with_command_logging
     async def cancel_creation(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         if user_id not in self.active_creations:
@@ -456,11 +468,13 @@ class CharacterCreation(commands.Cog):
         await interaction.response.send_message("Character creation cancelled.", ephemeral=True)
 
     @app_commands.command(name="my_councillor", description="Show your most recently saved Councillor")
+    @with_command_logging
     async def my_councillor(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         try:
             character = await self.repo.get_character_by_user(user_id)
         except Exception as exc:
+            self.logger.exception("Failed to load character", extra={"ctx": ctx_from_interaction(interaction)})
             await interaction.response.send_message(f"Failed to load character: {exc}", ephemeral=True)
             return
 

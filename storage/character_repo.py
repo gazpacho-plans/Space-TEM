@@ -2,20 +2,29 @@ import sqlite3
 import json
 from typing import Optional, Dict, Any, List
 from pathlib import Path
-import concurrent.futures
 import asyncio
+import aiosqlite
 
 
 class CharacterRepository:
     def __init__(self, db_path: str = "data/db/characters.db"):
         self.db_path = db_path
-        self._executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
-        self._ensure_db()
+        self._conn: Optional[aiosqlite.Connection] = None
+        self._init_lock = asyncio.Lock()
+        self._initialized = False
 
-    def _ensure_db(self) -> None:
-        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
+    async def _ensure_initialized(self) -> None:
+        if self._initialized and self._conn is not None:
+            return
+        async with self._init_lock:
+            if self._initialized and self._conn is not None:
+                return
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            conn = await aiosqlite.connect(self.db_path)
+            # Improve concurrency characteristics
+            await conn.execute("PRAGMA journal_mode=WAL;")
+            await conn.execute("PRAGMA busy_timeout=5000;")
+            await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS characters (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,21 +41,43 @@ class CharacterRepository:
                 );
                 """
             )
-            conn.execute(
+            await conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_characters_user_id ON characters(user_id);
                 """
             )
-
-    def _get_executor(self) -> concurrent.futures.ThreadPoolExecutor:
-        if self._executor is None:
-            self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-        return self._executor
+            # Enforce per-user unique character names
+            try:
+                await conn.execute(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_characters_user_name
+                    ON characters(user_id, name);
+                    """
+                )
+            except Exception:
+                # If duplicates already exist, index creation will fail; continue startup.
+                pass
+            await conn.commit()
+            self._conn = conn
+            self._initialized = True
 
     def close(self) -> None:
-        if self._executor:
-            self._executor.shutdown(wait=False, cancel_futures=True)
-            self._executor = None
+        """Schedule async close without blocking the caller (e.g., cog_unload)."""
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.aclose())
+        except RuntimeError:
+            # No running loop; best-effort synchronous close via sqlite3 for safety
+            # (unlikely in bot runtime). We'll ignore since aiosqlite needs a loop.
+            pass
+
+    async def aclose(self) -> None:
+        if self._conn is not None:
+            try:
+                await self._conn.close()
+            finally:
+                self._conn = None
+                self._initialized = False
 
     def _serialize(self, character: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -62,7 +93,7 @@ class CharacterRepository:
             "controlled_orgs": json.dumps(character.get("controlled_orgs", [])),
         }
 
-    def _deserialize(self, row: sqlite3.Row) -> Dict[str, Any]:
+    def _deserialize(self, row: sqlite3.Row | tuple) -> Dict[str, Any]:
         return {
             "id": row[0],
             "user_id": row[1],
@@ -78,96 +109,84 @@ class CharacterRepository:
         }
 
     async def save_character(self, character: Dict[str, Any]) -> int:
+        await self._ensure_initialized()
+        assert self._conn is not None
         data = self._serialize(character)
-
-        def _save() -> int:
-            with sqlite3.connect(self.db_path) as conn:
-                cur = conn.execute(
-                    """
-                    INSERT INTO characters (
-                        user_id, name, faction, profession, attributes, traits, income, xp, location, controlled_orgs
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        data["user_id"], data["name"], data["faction"], data["profession"],
-                        data["attributes"], data["traits"], data["income"], data["xp"],
-                        data["location"], data["controlled_orgs"],
-                    ),
-                )
-                return cur.lastrowid
-
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _save)
+        try:
+            cur = await self._conn.execute(
+                """
+                INSERT INTO characters (
+                    user_id, name, faction, profession, attributes, traits, income, xp, location, controlled_orgs
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    data["user_id"], data["name"], data["faction"], data["profession"],
+                    data["attributes"], data["traits"], data["income"], data["xp"],
+                    data["location"], data["controlled_orgs"],
+                ),
+            )
+            await self._conn.commit()
+            return cur.lastrowid  # type: ignore[return-value]
+        except aiosqlite.IntegrityError as exc:
+            # Likely uniqueness on (user_id, name)
+            raise ValueError("A character with this name already exists for this user.") from exc
 
     async def get_character_by_user(self, user_id: int) -> Optional[Dict[str, Any]]:
-        def _get() -> Optional[Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
-                cur = conn.execute(
-                    "SELECT * FROM characters WHERE user_id = ? ORDER BY id DESC LIMIT 1",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                if row is None:
-                    return None
-                return self._deserialize(row)
-
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _get)
+        await self._ensure_initialized()
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT * FROM characters WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+            (user_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if row is None:
+                return None
+            return self._deserialize(row)
 
     async def list_characters_by_user(self, user_id: int) -> List[Dict[str, Any]]:
-        def _list() -> List[Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
-                cur = conn.execute(
-                    "SELECT * FROM characters WHERE user_id = ? ORDER BY id DESC",
-                    (user_id,),
-                )
-                rows = cur.fetchall()
-                return [self._deserialize(row) for row in rows]
-
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _list)
+        await self._ensure_initialized()
+        assert self._conn is not None
+        async with self._conn.execute(
+            "SELECT * FROM characters WHERE user_id = ? ORDER BY id DESC",
+            (user_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+            return [self._deserialize(row) for row in rows]
 
     async def delete_character(self, user_id: int, character_id: int) -> bool:
-        def _delete() -> bool:
-            with sqlite3.connect(self.db_path) as conn:
-                cur = conn.execute(
-                    "DELETE FROM characters WHERE user_id = ? AND id = ?",
-                    (user_id, character_id),
-                )
-                return cur.rowcount > 0
-
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _delete)
+        await self._ensure_initialized()
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "DELETE FROM characters WHERE user_id = ? AND id = ?",
+            (user_id, character_id),
+        )
+        await self._conn.commit()
+        return cur.rowcount > 0  # type: ignore[return-value]
 
     async def list_all_characters(self, limit: int | None = None) -> List[Dict[str, Any]]:
-        def _list() -> List[Dict[str, Any]]:
-            with sqlite3.connect(self.db_path) as conn:
-                sql = "SELECT * FROM characters ORDER BY id DESC"
-                if limit is not None and limit > 0:
-                    sql += " LIMIT ?"
-                    cur = conn.execute(sql, (limit,))
-                else:
-                    cur = conn.execute(sql)
-                rows = cur.fetchall()
+        await self._ensure_initialized()
+        assert self._conn is not None
+        if limit is not None and limit > 0:
+            async with self._conn.execute(
+                "SELECT * FROM characters ORDER BY id DESC LIMIT ?",
+                (limit,),
+            ) as cur:
+                rows = await cur.fetchall()
+                return [self._deserialize(row) for row in rows]
+        else:
+            async with self._conn.execute(
+                "SELECT * FROM characters ORDER BY id DESC"
+            ) as cur:
+                rows = await cur.fetchall()
                 return [self._deserialize(row) for row in rows]
 
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _list)
-
     async def delete_character_by_id(self, character_id: int) -> bool:
-        def _delete() -> bool:
-            with sqlite3.connect(self.db_path) as conn:
-                cur = conn.execute(
-                    "DELETE FROM characters WHERE id = ?",
-                    (character_id,),
-                )
-                return cur.rowcount > 0
-
-        executor = self._get_executor()
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, _delete)
+        await self._ensure_initialized()
+        assert self._conn is not None
+        cur = await self._conn.execute(
+            "DELETE FROM characters WHERE id = ?",
+            (character_id,),
+        )
+        await self._conn.commit()
+        return cur.rowcount > 0  # type: ignore[return-value]
+        
