@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 import asyncio
 
 from dotenv import load_dotenv
+from storage.character_repo import CharacterRepository
 
 load_dotenv('token.env')
 
@@ -19,6 +20,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Global variables for character creation flow
 active_creations: Dict[int, Dict[str, Any]] = {}  # user_id -> creation_state
+character_repo = CharacterRepository()
 
 class CharacterCreationState:
     def __init__(self, user_id: int, character_name: str):
@@ -295,9 +297,17 @@ class ConfirmationView(discord.ui.View):
         
         # Generate character attributes and traits
         character = generate_character(self.creation_state)
+        character['user_id'] = self.creation_state.user_id
+        
+        # Persist character
+        try:
+            saved_id = await character_repo.save_character(character)
+        except Exception as e:
+            await interaction.response.send_message(f"Failed to save character: {e}", ephemeral=True)
+            return
         
         # Create character sheet embed
-        embed = create_character_sheet_embed(character)
+        embed = create_character_sheet_embed(character, saved_id)
         
         # Clean up creation state
         cleanup_creation_state(self.creation_state.user_id)
@@ -415,7 +425,7 @@ def calculate_income(attributes: Dict[str, int], traits: list):
     
     return income
 
-def create_character_sheet_embed(character: Dict[str, Any]):
+def create_character_sheet_embed(character: Dict[str, Any], saved_id: Optional[int] = None):
     """Create the final character sheet embed"""
     embed = discord.Embed(
         title=f"Character Created: {character['name']}",
@@ -451,7 +461,10 @@ def create_character_sheet_embed(character: Dict[str, Any]):
     prof_emoji = PROFESSION_EMOJIS.get(character['profession'], "")
     embed.add_field(name=f"Available Missions ({prof_emoji} {character['profession']})", value=missions_text, inline=False)
     
-    embed.set_footer(text="Character creation complete!")
+    if saved_id is not None:
+        embed.set_footer(text=f"Character creation complete! ID: {saved_id}")
+    else:
+        embed.set_footer(text="Character creation complete!")
     return embed
 
 def cleanup_creation_state(user_id: int):
@@ -491,6 +504,46 @@ async def cancel_creation(interaction: discord.Interaction):
     
     cleanup_creation_state(user_id)
     await interaction.response.send_message("Character creation cancelled.", ephemeral=True)
+
+@bot.tree.command(name="my_character", description="View your most recently saved character")
+async def my_character(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    character = await character_repo.get_character_by_user(user_id)
+    if character is None:
+        await interaction.response.send_message("You have no saved characters.", ephemeral=True)
+        return
+    embed = create_character_sheet_embed(character)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="my_characters", description="List all your saved characters")
+async def my_characters(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    characters = await character_repo.list_characters_by_user(user_id)
+    if not characters:
+        await interaction.response.send_message("You have no saved characters.", ephemeral=True)
+        return
+    embed = discord.Embed(title="Your Saved Characters", color=discord.Color.blurple())
+    for ch in characters:
+        embed.add_field(
+            name=f"ID {ch['id']}: {ch['name']}",
+            value=f"Faction: {ch['faction']} | Profession: {ch['profession']} | XP: {ch['xp']}",
+            inline=False
+        )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="delete_character", description="Delete one of your saved characters by ID")
+@app_commands.describe(character_id="The ID of the character to delete (see /my_characters)")
+async def delete_character(interaction: discord.Interaction, character_id: int):
+    user_id = interaction.user.id
+    try:
+        deleted = await character_repo.delete_character(user_id, character_id)
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to delete character: {e}", ephemeral=True)
+        return
+    if deleted:
+        await interaction.response.send_message(f"Deleted character ID {character_id}.", ephemeral=True)
+    else:
+        await interaction.response.send_message("Character not found or not owned by you.", ephemeral=True)
 
 # Error handling
 @bot.event
