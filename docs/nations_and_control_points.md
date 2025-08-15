@@ -1,5 +1,4 @@
-### Nation Card Example:
-
+Nation Card Example:
 ---
 control points
 ---
