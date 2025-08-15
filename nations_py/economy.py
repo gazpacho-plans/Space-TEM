@@ -8,6 +8,8 @@ from .config import (
     PROSPERITY_MULT,
     unrest_multiplier,
     BOOST_FLAG,
+    EDU_BASE_MULT,
+    education_effectiveness,
 )
 from .types import NationState, ModifierState, Yields
 
@@ -22,10 +24,11 @@ class IncomeExplanation(TypedDict):
     capacityAfterBoostGate: Dict[str, float]
     perCPSlice: Dict[str, float]
     cpCount: int
-    yourCPs: int
+    yourCPs: float
     ownerMods: List[str]
     postGrants: Dict[str, float]
     final: Dict[str, float]
+    education: Dict[str, float | int]
 
 
 # ———————————————————————————————————————————————————————————————————————
@@ -40,13 +43,27 @@ def compute_nation_capacity(n: NationState) -> Yields:
     Boost is gated to 0 if the nation lacks launch capability.
     """
     seed = CAPACITY_SEED_BY_PROFILE[n.economyProfile]
-    prosperity_mult = PROSPERITY_MULT[n.prosperity]
+    # Clamp prosperity to supported range 0–9
+    prosperity_key = max(0, min(9, n.prosperity))
+    prosperity_mult = PROSPERITY_MULT[prosperity_key]
     unrest_mult = unrest_multiplier(n.unrest)
 
     cap_mods = [m for m in n.modifiers if m.stage == "capacity"]
     cap_mult = combine_yield_mults(cap_mods)
 
-    capacity = mul_yields(mult_all(Yields(seed.money, seed.influence, seed.ops, seed.boost), prosperity_mult * unrest_mult), cap_mult)
+    # Education multiplier (applied at capacity stage) with unrest dampening
+    edu_eff = education_effectiveness(n.unrest)
+    edu_level = max(0, min(9, getattr(n, "education", 0)))
+    edu_mult = Yields(
+        money=1.0 + EDU_BASE_MULT["money"] * edu_level * edu_eff,
+        influence=1.0 + EDU_BASE_MULT["influence"] * edu_level * edu_eff,
+        ops=1.0 + EDU_BASE_MULT["ops"] * edu_level * edu_eff,
+        boost=1.0 + EDU_BASE_MULT["boost"] * edu_level * edu_eff,
+    )
+
+    base = mult_all(Yields(seed.money, seed.influence, seed.ops, seed.boost), prosperity_mult * unrest_mult)
+    with_edu = mul_yields(base, edu_mult)
+    capacity = mul_yields(with_edu, cap_mult)
 
     if not has_launch_capability(n):
         capacity.boost = 0
@@ -78,13 +95,26 @@ def compute_faction_income_in_nation(n: NationState, faction_id: str) -> Yields:
 
 def explain_income(n: NationState, faction_id: str) -> IncomeExplanation:
     seed = CAPACITY_SEED_BY_PROFILE[n.economyProfile]
-    prosperity_mult = PROSPERITY_MULT[n.prosperity]
+    prosperity_key = max(0, min(9, n.prosperity))
+    prosperity_mult = PROSPERITY_MULT[prosperity_key]
     u_mult = unrest_multiplier(n.unrest)
 
     cap_mods_arr = [m for m in n.modifiers if m.stage == "capacity"]
     capacity_mods = [m.id for m in cap_mods_arr]
 
-    before_gate = mul_yields(mult_all(Yields(seed.money, seed.influence, seed.ops, seed.boost), prosperity_mult * u_mult), combine_yield_mults(cap_mods_arr))
+    # Education multiplier details for explanation
+    edu_eff = education_effectiveness(n.unrest)
+    edu_level = max(0, min(9, getattr(n, "education", 0)))
+    edu_mult = Yields(
+        money=1.0 + EDU_BASE_MULT["money"] * edu_level * edu_eff,
+        influence=1.0 + EDU_BASE_MULT["influence"] * edu_level * edu_eff,
+        ops=1.0 + EDU_BASE_MULT["ops"] * edu_level * edu_eff,
+        boost=1.0 + EDU_BASE_MULT["boost"] * edu_level * edu_eff,
+    )
+
+    base = mult_all(Yields(seed.money, seed.influence, seed.ops, seed.boost), prosperity_mult * u_mult)
+    with_edu = mul_yields(base, edu_mult)
+    before_gate = mul_yields(with_edu, combine_yield_mults(cap_mods_arr))
     after_gate = Yields(before_gate.money, before_gate.influence, before_gate.ops, before_gate.boost if has_launch_capability(n) else 0)
 
     cp_count = max(1, len(n.cp))
@@ -109,6 +139,12 @@ def explain_income(n: NationState, faction_id: str) -> IncomeExplanation:
         "prosperityMult": prosperity_mult,
         "unrestMult": u_mult,
         "capacityMods": capacity_mods,
+        # expose education contribution for UI/debugging
+        "education": {
+            "level": edu_level,
+            "effectiveness": round(edu_eff, 3),
+            "mult": asdict(round_yields(edu_mult, 3)),
+        },
         "capacityBeforeBoostGate": asdict(round_yields(before_gate, 3)),
         "capacityAfterBoostGate": asdict(round_yields(after_gate, 3)),
         "perCPSlice": asdict(round_yields(per_cp_slice_val, 3)),
@@ -122,6 +158,22 @@ def explain_income(n: NationState, faction_id: str) -> IncomeExplanation:
 
 def compute_all_faction_income_in_nation(n: NationState, faction_ids: List[str]) -> Dict[str, Yields]:
     return {f: compute_faction_income_in_nation(n, f) for f in faction_ids}
+
+
+def compute_nation_research_output(n: NationState) -> float:
+    """Research output from a nation per tick (not split across CPs).
+
+    Derived from `researchSeed`, scaled by prosperity and education (with unrest
+    dampening applied to the education component).
+    Formula: seed × prosperityMult × (1 + edu_level * 0.05 * edu_eff)
+    """
+    seed = getattr(n, "researchSeed", 0.0) or 0.0
+    prosperity_key = max(0, min(9, n.prosperity))
+    prosperity_mult = PROSPERITY_MULT[prosperity_key]
+    edu_eff = education_effectiveness(n.unrest)
+    edu_level = max(0, min(9, getattr(n, "education", 0)))
+    edu_mult = 1.0 + 0.05 * edu_level * edu_eff
+    return seed * prosperity_mult * edu_mult
 
 
 # ———————————————————————————————————————————————————————————————————————

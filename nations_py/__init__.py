@@ -13,6 +13,8 @@ from .config import (
     unrest_multiplier,
     BOOST_FLAG,
     EXECUTIVE_PO_THRESHOLD,
+    EDU_BASE_MULT,
+    education_effectiveness,
 )
 
 from .types import (
@@ -26,8 +28,10 @@ from .types import (
 from .economy import (
     compute_nation_capacity,
     per_cp_slice,
+    effective_cp_count,
     compute_faction_income_in_nation,
     compute_all_faction_income_in_nation,
+    compute_nation_research_output,
     explain_income,
     has_launch_capability,
     compute_post_grants,
@@ -40,6 +44,10 @@ from .economy import (
     round_yields,
 )
 
+from .progression import (
+    tick_nation_society,
+)
+
 __all__ = [
     # config
     "CP_BY_TIER",
@@ -48,6 +56,8 @@ __all__ = [
     "unrest_multiplier",
     "BOOST_FLAG",
     "EXECUTIVE_PO_THRESHOLD",
+    "EDU_BASE_MULT",
+    "education_effectiveness",
     # types
     "Yields",
     "CPState",
@@ -57,8 +67,10 @@ __all__ = [
     # economy
     "compute_nation_capacity",
     "per_cp_slice",
+    "effective_cp_count",
     "compute_faction_income_in_nation",
     "compute_all_faction_income_in_nation",
+    "compute_nation_research_output",
     "explain_income",
     "has_launch_capability",
     "compute_post_grants",
@@ -69,6 +81,8 @@ __all__ = [
     "mul_yields",
     "combine_yield_mults",
     "round_yields",
+    # progression
+    "tick_nation_society",
 ]
 
 

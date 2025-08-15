@@ -54,6 +54,11 @@ class NationState:
     security: int
     unrest: int
     prosperity: int
+    government: int = 2 # Government democracy score: 0=Totalitarian, 1=Authoritarian, 2=Quasi-Democracy, 3=Flawed Democracy, 4=Full Democracy
+    nukes: int = 0
+    armies: int = 0
+    education: int = 3 # Education level 0–9 (affects economy and slow societal drift)
+    researchSeed: float = 0.0
 
     flags: Set[str] = field(default_factory=set)
     modifiers: List[ModifierState] = field(default_factory=list)
