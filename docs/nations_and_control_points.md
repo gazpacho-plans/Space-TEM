@@ -43,4 +43,3 @@
  🪖/⚓ Can be built if nation prioritizes 'Fund Military' policy (-📈, +🐌)
  ☢️ Can be built if nation prioritizes 'Build Nuclear Weapons' policy (-📈, +🤬, +🔬)
  🧑‍🚀 Launch facilities directly determine 🚀 boost income. Can be built if nation prioritizes 'Fund Space Program' policy (-📈, +🐌, +📖)
- 
