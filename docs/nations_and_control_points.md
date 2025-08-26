@@ -1,6 +1,7 @@
 # Nation Card Example:  
 (control point) (control point) (control point) (control point)  
 ### Stats:  
+
 🏛️ Government Type (Autocratic, Thocratic, Monarchy, Olagarcy, Republic)  
 🕊️ Democracy Index (1-10 float) // civil liberties and electoral process  
 🐌 Bureaucracy Score (1-10 float) // gov efficiency  
