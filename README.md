@@ -1,5 +1,6 @@
 welcome to hell
 ```
-main branch is pre database persistence
-storage branch hosts persistence
+lagacy branch is pre database persistence
+main-storage branch hosts persistence
 ```
+
